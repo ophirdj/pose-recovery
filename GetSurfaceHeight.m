@@ -6,6 +6,7 @@ function [ z ] = GetSurfaceHeight( x, y, DTM, cellsize )
 %   DTM - DTM
 %   cellsize - DTM resolution (distance between cells)
 
+% Get the 4 positions defining the DTM surface for (x, y)
 j_low = floor(x ./ cellsize);
 j_high = ceil(x ./ cellsize);
 k_low = floor(y ./ cellsize);
@@ -29,11 +30,5 @@ z = (DTM(j_low + ((k_low - 1) * size(DTM, 1)))   .* (1 - weight_x) .* (1 - weigh
      DTM(j_low + ((k_high - 1) * size(DTM, 1)))  .* (1 - weight_x) .* (weight_y)     + ...
      DTM(j_high + ((k_low - 1) * size(DTM, 1)))  .* (weight_x)     .* (1 - weight_y) + ...
      DTM(j_high + ((k_high - 1) * size(DTM, 1))) .* (weight_x)     .* (weight_y));
-
-% Non vectoric variant
-% z = (DTM(j_low, k_low)   .* (1 - weight_x) .* (1 - weight_y) + ...
-%      DTM(j_low, k_high)  .* (1 - weight_x) .* (weight_y)     + ...
-%      DTM(j_high, k_low)  .* (weight_x)     .* (1 - weight_y) + ...
-%      DTM(j_high, k_high) .* (weight_x)     .* (weight_y));
 end
 
