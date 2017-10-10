@@ -1,14 +1,14 @@
 %% Section - Generate path
 % The 'real' pose
-n_samples = 10;
-Ps = [linspace(100, 200, n_samples); linspace(100, 200, n_samples); linspace(400, 300, n_samples)];
+n_samples = 20;
+Ps = [linspace(100, 200, n_samples); linspace(100, 200, n_samples); linspace(400, 450, n_samples)];
 Rs = repmat([1 0 0; 0 -1 0; 0 0 -1], 1, 1, n_samples);
 
 % Errors
-ed = 5e0;
-ep = 1e1;
-er = 1e-1;
-ev = 2e0;
+ed = 0;...1e0;
+ep = 5e0;
+er = 0;...1e-1;
+ev = 0;...e0;
 
 % Noisy Path poses
 P0s = zeros(size(Ps, 1), n_samples);
@@ -25,7 +25,7 @@ end
 
 % Distance readings
 n_rays = 20;
-ray_angle_openning = pi / 6;
+ray_angle_openning = pi / 4;
 rays = GenerateRays(ray_angle_openning / n_rays, n_rays);
 
 distances = zeros(size(rays, 2), n_samples);
@@ -38,7 +38,7 @@ end
 %% Section - Preprocess
 
 % Window size for multi-pose calculation
-window = 4;
+window = 10;
 
 if window > n_samples
     window = n_samples;
@@ -53,7 +53,7 @@ v0s = [zeros(3, window - 1), v0s];
 
 %% Section - Calculate
 
-n_generated_points = 10;
+n_generated_points = 1;
 n_iterations = 10;
 lambda = 3.6;
 
@@ -73,8 +73,9 @@ for n = (1:n_samples)
 end
 
 
-%% Section Analyze error
+%% Section Analyze mean error
 
+figure;
 % Mean model error
 semilogy((1:n_iterations), sum(errors, 2) / n_samples);
 hold on;
@@ -94,4 +95,14 @@ r_errors = r_errors / n_samples;
 semilogy((1:n_iterations), r_errors);
 title('Square Error per model iteration');
 legend('Model Error', 'Position Error', 'Rotation Error', 'Location','northeast');
+hold off;
+
+%% Section Analyze error over time
+
+figure;
+semilogy((1:n_samples), sum((P1s - Ps) .^ 2, 1));
+hold on;
+semilogy((1:n_samples), reshape(sum(sum((R1s - Rs) .^ 2, 1), 2), [1, n_samples]));
+title('Square Error over time');
+legend('Position Error', 'Rotation Error', 'Location','southeast');
 hold off;
