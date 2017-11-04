@@ -30,10 +30,13 @@ min_err = +inf;
 for n = (1:n_points)
     P = P0s;
     R = R0s;
-    for m = (1:size(P0s, 2))
-        [P(:, m), R(:, :, m)] = NoisyPose(P0s(:, m), R0s(:, :, m), ep, er);
+    if n > 1 % For the first iteration use given poses
+        for m = (1:size(P0s, 2))
+            [P(:, m), R(:, :, m)] = NoisyPose(P0s(:, m), R0s(:, :, m), ep, er);
+        end
     end
-    [P1s_tmp, R1s_tmp, errors_tmp, Ps_tmp, Rs_tmp] = FindPoseMultiAux(P, R, v0s, rays, distances, DTM, cellsize, n_iter, lambda);
+    [P1s_tmp, R1s_tmp, errors_tmp, Ps_tmp, Rs_tmp] = ...
+        FindPoseMultiAux(P, R, v0s, rays, distances, DTM, cellsize, n_iter, lambda);
     if errors_tmp(length(errors_tmp)) < min_err
         min_err = errors_tmp(length(errors_tmp));
         P1s = P1s_tmp;
