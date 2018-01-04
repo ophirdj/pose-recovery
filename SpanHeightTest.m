@@ -1,4 +1,4 @@
-output_file = 'error_vs_span_height1.csv';
+output_file = 'error_vs_span_height2.csv';
 
 n_samples = 10;
 
@@ -17,8 +17,8 @@ n_rays = 20;
    
 window = 10;
 
-heights = (100:50:400);
-angles = (1e-1:1e-1:pi/3);
+heights = (50:25:401);
+angles = (1e-1:3e-2:pi/3);
 
 % n_tests = 300;
 
@@ -30,10 +30,14 @@ angles = (1e-1:1e-1:pi/3);
 % h = 100 + 200 * rand();
 % ray_angle_openning = (pi / 4) * rand();
 
+% Execute in parallel
+parpool(4);
+spmd
+
 for h = heights
 for ray_angle_openning = angles
 
-n_tests_per_initial_condition = 10;
+n_tests_per_initial_condition = 2;
 
 for test_per_initial_condition = (1:n_tests_per_initial_condition)
 
@@ -114,7 +118,8 @@ pos_err = sqrt(sum((P1s(:, n_samples) - Ps(:, n_samples)) .^ 2, 1));
 rot_err = sqrt(sum(sum((R1s(:, :, n_samples) - Rs(:, :, n_samples)) .^ 2, 1), 2));
 
 %%
-fid = fopen(output_file, 'a+');
+t = getCurrentTask();
+fid = fopen([output_file, '_', num2str(t.ID)], 'a+');
 fprintf(fid, '%d,%d,%d,%d\n', [h, ray_angle_openning, pos_err, rot_err]);
 fclose(fid);
 
@@ -123,3 +128,6 @@ end
 
 end
 end
+
+end
+delete(gcp);
