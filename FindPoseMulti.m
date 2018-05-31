@@ -235,6 +235,6 @@ function err = Error( v, rays, distances, v0s, DTM, cellsize )
         v1s(:, n) = Ps(:, n+1) - Ps(:, n);
     end
     err = sum(sum((distances' - ds) .^ 2, 2), 1) + ...
-          1e1 * sum(sum((v1s - v0s) .^ 2, 2), 1);
+          10 * sum(sum((v1s - v0s) .^ 2, 2), 1);
 end
 

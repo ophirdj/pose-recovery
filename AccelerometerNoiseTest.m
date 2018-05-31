@@ -1,7 +1,7 @@
 %% Section - Generate path
 % The 'real' pose
 
-scenario_name = 'AccelerometerNoiseTestHigh';
+scenario_name = 'X';
 
 % Low Flight
 % via_points = [114 171 350; ...
@@ -50,7 +50,7 @@ end
 n_samples = size(Ps, 2);
 
 %% Section Errors
-evs = [0 2 5 10 15 30];
+evs = [5];
 evs = (evs .^2) / 3;
 mean_err_pos = zeros(1, length(evs));
 mean_err_rot = zeros(1, length(evs));
