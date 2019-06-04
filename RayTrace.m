@@ -9,15 +9,15 @@ function [ distance ] = RayTrace( P, ray, DTM, cellsize, epsilon, lambda, beta )
 %   beta      - [OPTIONAL] Ray trace extention rate (should be > 1)
 
 if nargin < 7 || beta <= 1
-    beta = 1.3;
+    beta = 1 + 3e-1;
 end
 
 if nargin < 6 || lambda <= 0
-    lambda = 10;
+    lambda = 70;
 end
 
 if nargin < 5 || epsilon <= 0
-    epsilon = 1e-6;
+    epsilon = 1e-10;
 end
 
 % normalize ray;
@@ -34,24 +34,21 @@ end
 % Then, trace along the ray to find a place below ground level
 
 
-% If we cannot find it after that much iterations - assume ray doesnt
-% intersect with ground
-max_steps = 50;
 Q = P + lambda * ray;
 height = Q(3) - GetSurfaceHeight(Q(1), Q(2), DTM, cellsize);
 
 
-while height > 0 && max_steps > 0
-    max_steps = max_steps - 1;
+while height > 0
     dist_high = lambda;
     lambda = lambda * beta;
     Q = P + lambda * ray;
-    height = Q(3) - GetSurfaceHeight(Q(1), Q(2), DTM, cellsize);
-end
-
-if max_steps <= 0
-    distance = inf;
-    return;
+    if Q(1) > cellsize && Q(1) < cellsize * size(DTM, 1) && ...
+            Q(2) > cellsize && Q(2) < cellsize * size(DTM, 2)
+        height = Q(3) - GetSurfaceHeight(Q(1), Q(2), DTM, cellsize);
+    else
+        distance = inf;
+        return;
+    end
 end
 
 dist_low = lambda;
