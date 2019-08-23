@@ -1,8 +1,11 @@
 function success = ImuLidarNavigator( in_mnav, in_mimu, in_mlidar, ...
-    in_meta, out_res, out_err, window_size, DTM, show_only )
+    in_meta, out_res, out_err, window_size, DTM, sim_len, show_only )
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
 if nargin < 9
+    sim_len = 0;
+end
+if nargin < 10
     show_only = 0;
 end
 
@@ -15,7 +18,7 @@ cellsize = fread(F_META, 1, 'double');
 fclose(F_META);
 
 success = true;
-if show_only==0
+if show_only == 0 || show_only == 2
 
 F_IMU=fopen(in_mimu,'rb');
 F_LIDAR=fopen(in_mlidar,'rb');
@@ -134,6 +137,13 @@ while (~feof(F_IMU))
             success = false;
             break;
         end
+
+        if sim_len == 1
+            success = true;
+            break;
+        elseif sim_len > 0
+            sim_len = sim_len - 1;
+        end
         
         % Read next records
         imu_data=fread(F_IMU,7,'double');
@@ -146,7 +156,9 @@ fclose(F_LIDAR);
 fclose(F_TRU);
 fclose(F_RES);
 fclose(F_ERR);
-% return;
+if show_only == 0
+    return;
+end
 end
 %% Show results
 

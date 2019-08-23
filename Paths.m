@@ -104,33 +104,33 @@ dtm_load();
 %     fprintf('Error generating path\n');
 % end
 % % PathPlot;
-% %% Circle30
-% freq_Hz = 30;
-% n_rays = 5;
-% span_angle = pi/4;
-% ini_pos = [4500 4500 1500]';
-% mot_def = [2 0 0 0 100 1;
-%             6 pi/8 0 0 0 50;
-%             6 0 0 0 0 1;
-%            ];
-% PATH = [dir 'circle30\'];
-% if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
-%     fprintf('Error generating path\n');
-% end
-% % PathPlot;
-% %% Circle 100
-% freq_Hz = 100;
-% n_rays = 5;
-% span_angle = pi/4;
-% ini_pos = [4500 4500 1500]';
-% mot_def = [2 0 0 0 100 1;
-%             6 pi/8 0 0 0 50;
-%             6 0 0 0 0 1;
-%            ];
-% PATH = [dir 'circle100\'];
-% if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
-%     fprintf('Error generating path\n');
-% end
+%% Circle30
+freq_Hz = 30;
+n_rays = 5;
+span_angle = pi/4;
+ini_pos = [4500 4500 1500]';
+mot_def = [2 0 0 0 100 1;
+            6 pi/8 0 0 0 50;
+            6 0 0 0 0 1;
+           ];
+PATH = [dir 'circle30\'];
+if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
+    fprintf('Error generating path\n');
+end
+% PathPlot;
+%% Circle 100
+freq_Hz = 100;
+n_rays = 5;
+span_angle = pi/4;
+ini_pos = [4500 4500 1500]';
+mot_def = [2 0 0 0 100 1;
+            6 pi/8 0 0 0 50;
+            6 0 0 0 0 1;
+           ];
+PATH = [dir 'circle100\'];
+if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
+    fprintf('Error generating path\n');
+end
 % % PathPlot;
 % %% Circle1_20
 % freq_Hz = 1;
@@ -160,34 +160,34 @@ dtm_load();
 %     fprintf('Error generating path\n');
 % end
 % % PathPlot;
-% %% Circle30_20
-% freq_Hz = 30;
-% n_rays = 20;
-% span_angle = pi/4;
-% ini_pos = [4500 4500 1500]';
-% mot_def = [2 0 0 0 100 1;
-%             6 pi/8 0 0 0 50;
-%             6 0 0 0 0 1;
-%            ];
-% PATH = [dir 'circle30_20\'];
-% if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
-%     fprintf('Error generating path\n');
-% end
-% % PathPlot;
-% %% Circle 100_20
-% freq_Hz = 100;
-% n_rays = 20;
-% span_angle = pi/4;
-% ini_pos = [4500 4500 1500]';
-% mot_def = [2 0 0 0 100 1;
-%             6 pi/8 0 0 0 50;
-%             6 0 0 0 0 1;
-%            ];
-% PATH = [dir 'circle100_20\'];
-% if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
-%     fprintf('Error generating path\n');
-% end
+%% Circle30_20
+freq_Hz = 30;
+n_rays = 20;
+span_angle = pi/4;
+ini_pos = [4500 4500 1500]';
+mot_def = [2 0 0 0 100 1;
+            6 pi/8 0 0 0 50;
+            6 0 0 0 0 1;
+           ];
+PATH = [dir 'circle30_20\'];
+if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
+    fprintf('Error generating path\n');
+end
 % PathPlot;
+%% Circle 100_20
+freq_Hz = 100;
+n_rays = 20;
+span_angle = pi/4;
+ini_pos = [4500 4500 1500]';
+mot_def = [2 0 0 0 100 1;
+            6 pi/8 0 0 0 50;
+            6 0 0 0 0 1;
+           ];
+PATH = [dir 'circle100_20\'];
+if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
+    fprintf('Error generating path\n');
+end
+PathPlot;
 %% Curve10_20
 freq_Hz = 10;
 n_rays = 20;
