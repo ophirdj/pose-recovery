@@ -133,7 +133,7 @@ while (~feof(F_IMU))
         fwrite(F_ERR,[pr_count;pos_err;att_err;lidar_err_mean;lidar_err_num_valid;-1;-1],'double');
         fwrite(F_RES,[pr_count;pos; att; Cbn'*vel_n],'double');
         
-        if any(abs(pos_err)>20)
+        if any(abs(pos_err)>50)
             success = false;
             break;
         end

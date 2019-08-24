@@ -1,11 +1,11 @@
 PATHS = {...
         'C:\Users\Ophir\matlab_workspace\trajectories\circle30\',...
-        'C:\Users\Ophir\matlab_workspace\trajectories\circle30_20\',...
-        'C:\Users\Ophir\matlab_workspace\trajectories\circle100\',...
-        'C:\Users\Ophir\matlab_workspace\trajectories\circle100_20\',...
-        'C:\Users\Ophir\matlab_workspace\trajectories\Curve10_20\',...
-        'C:\Users\Ophir\matlab_workspace\trajectories\Curve30_20\',...
-        'C:\Users\Ophir\matlab_workspace\trajectories\Curve100_20\',...
+%         'C:\Users\Ophir\matlab_workspace\trajectories\circle30_20\',...
+%         'C:\Users\Ophir\matlab_workspace\trajectories\circle100\',...
+%         'C:\Users\Ophir\matlab_workspace\trajectories\circle100_20\',...
+%         'C:\Users\Ophir\matlab_workspace\trajectories\Curve10_20\',...
+%         'C:\Users\Ophir\matlab_workspace\trajectories\Curve30_20\',...
+%         'C:\Users\Ophir\matlab_workspace\trajectories\Curve100_20\',...
         };
 freqs = [ ...
 %     1 ...
@@ -20,6 +20,8 @@ freqs = [ ...
     30 ...
     100 ...
     ];
+
+MIN_SAMPLE_SIZE = 50;
     
 %IMU
 linear_errs = [0 1e-4 1e-3 1e-2 2e-2 5e-2 1e-1 2e-1 5e-1 1e0 2e0 5e0];
@@ -39,7 +41,7 @@ lidar_legal = zeros(length(lidar_errs),1);
 %LIDAR Scatter
 ls = [];
 %Window
-windows = 2:2:20;
+windows = 2:2:10;
 window_mean = zeros(length(windows),2);
 window_legal = zeros(length(windows),1);
     
@@ -56,7 +58,7 @@ for linear_err = 1:length(linear_errs)
             F_ERR = [PATH 'err.bin'];
         end
         err=readbin_v000(F_ERR,11);
-        if size(err, 2) < 100
+        if size(err, 2) < MIN_SAMPLE_SIZE
             continue
         end
         p = [1:floor(4*size(err, 2)/10), floor(6*size(err, 2)/10):size(err, 2)];
@@ -74,7 +76,7 @@ dtm = zeros(length(dtm_errs),2);
 for dtm_err = 1:length(dtm_errs)
     F_ERR = [PATH sprintf('dtm_%.0d/err.bin', dtm_errs(dtm_err))];
     err=readbin_v000(F_ERR,11);
-    if size(err, 2) < 100
+    if size(err, 2) < MIN_SAMPLE_SIZE
         continue
     end
     p = [1:floor(4*size(err, 2)/10), floor(6*size(err, 2)/10):size(err, 2)];
@@ -91,7 +93,7 @@ lidar = zeros(length(lidar_errs),2);
 for lidar_err = 1:length(lidar_errs)
     F_ERR = [PATH sprintf('lidar_%.0d/err.bin', lidar_errs(lidar_err))];
     err=readbin_v000(F_ERR,11);
-    if size(err, 2) < 100
+    if size(err, 2) < MIN_SAMPLE_SIZE
         continue
     end
     p = [1:floor(4*size(err, 2)/10), floor(6*size(err, 2)/10):size(err, 2)];
@@ -108,7 +110,7 @@ window_err = zeros(length(windows),2);
 for window = 1:length(windows)
     F_ERR = [PATH sprintf('window_%d/err.bin', windows(window))];
     err=readbin_v000(F_ERR,11);
-    if size(err, 2) < 100
+    if size(err, 2) < MIN_SAMPLE_SIZE
         continue
     end
     
@@ -154,7 +156,6 @@ colorbar();
 title('Rotation Error vs IMU');
 
 %DTM
-dtm_mean(dtm_errs==1,1)=2;
 figure;
 plot(dtm_errs, dtm_mean(:,1));
 set(gca, 'xscale', 'log');

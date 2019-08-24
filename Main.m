@@ -4,16 +4,16 @@ dtm_load();
 
 PATHS = {...
         'C:\Users\Ophir\matlab_workspace\trajectories\circle30\',...
-        'C:\Users\Ophir\matlab_workspace\trajectories\circle30_20\',...
-        'C:\Users\Ophir\matlab_workspace\trajectories\circle100\',...
-        'C:\Users\Ophir\matlab_workspace\trajectories\circle100_20\',...
-        'C:\Users\Ophir\matlab_workspace\trajectories\Curve10_20\',...
-        'C:\Users\Ophir\matlab_workspace\trajectories\Curve30_20\',...
-        'C:\Users\Ophir\matlab_workspace\trajectories\Curve100_20\',...
+%         'C:\Users\Ophir\matlab_workspace\trajectories\circle30_20\',...
+%         'C:\Users\Ophir\matlab_workspace\trajectories\circle100\',...
+%         'C:\Users\Ophir\matlab_workspace\trajectories\circle100_20\',...
+%         'C:\Users\Ophir\matlab_workspace\trajectories\Curve10_20\',...
+%         'C:\Users\Ophir\matlab_workspace\trajectories\Curve30_20\',...
+%         'C:\Users\Ophir\matlab_workspace\trajectories\Curve100_20\',...
         };
     
-show_only = 0;
-sim_len = 150;
+show_only = 1;
+sim_len = 500;
 
 for k = 1:length(PATHS)
     PATH = PATHS{k};
@@ -25,14 +25,25 @@ for k = 1:length(PATHS)
     in_mnav = [PATH 'mnav.bin'];
 
     window = 3;
-
-    try
-    % Ground Truth
-    ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
-        [PATH 'meta.bin'], [PATH 'res.bin'], [PATH 'err.bin'], window, DTM, sim_len, show_only);
-    catch
-        fprintf(F_LOG, '%s\n', 'Ground Truth');
+    
+    for dtm_err = [1e-1]
+        try
+        dir = [PATH sprintf('dtm_%.0d/', dtm_err)];
+        ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
+                [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
+%         close all;
+        catch
+            fprintf(F_LOG, '%s %.0d\n', 'DTM', dtm_err);
+        end
     end
+
+%     try
+%     % Ground Truth
+%     ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
+%         [PATH 'meta.bin'], [PATH 'res.bin'], [PATH 'err.bin'], window, DTM, sim_len, show_only);
+%     catch
+%         fprintf(F_LOG, '%s\n', 'Ground Truth');
+%     end
 
     if ~show_only
         close all;
@@ -76,7 +87,7 @@ for k = 1:length(PATHS)
         end
 
         %Batch Size
-        for w = 20:-2:2
+        for w = 10:-2:2
             try
             dir_imu = [PATH sprintf('imu_%.0d_%.0d/', 1e-1, 1e-1)];
             dir_lidar = [PATH sprintf('lidar_%.0d/', 1e-2)];

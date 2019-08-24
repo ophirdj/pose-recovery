@@ -54,10 +54,10 @@ function [cost] = calc_cost(pos_window, att_window, ...
     model_err(isnan(model_err)) = 0;
 
 
-    delta_pos_err = lambda1 / size(pos_window, 2) * delta_minus_delta0(pos_window, delta_pos_window);
-    delta_att_err = lambda2 / size(att_window, 2) * delta_minus_delta0(att_window, delta_att_window);
+%     delta_pos_err = lambda1 / size(pos_window, 2) * delta_minus_delta0(pos_window, delta_pos_window);
+%     delta_att_err = lambda2 / size(att_window, 2) * delta_minus_delta0(att_window, delta_att_window);
     
-    cost = [model_err(:); delta_pos_err(:); delta_att_err(:)];
+    cost = [model_err(:)];...; delta_pos_err(:); delta_att_err(:)];
 end
 
 function [res] = Pijz_minus_mPij(pos_window, att_window, lidar_window, rays, ...
