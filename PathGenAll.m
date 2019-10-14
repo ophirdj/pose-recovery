@@ -22,8 +22,8 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, n_rays, span_angle, f
     end
     
     %IMU
-    for linear_err = [0 1e-4 1e-3 1e-2 2e-2 5e-2 1e-1 2e-1 5e-1 1e0 2e0 5e0]
-        for angular_err = [0 1e-4 1e-3 1e-2 2e-2 5e-2 1e-1 2e-1 5e-1 1e0 2e0 5e0]
+    for linear_err = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0]
+        for angular_err = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0]
             dir = [dir_name sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
             if ~isdir(dir)
                 mkdir(dir);
@@ -35,7 +35,7 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, n_rays, span_angle, f
     end
 
     %DTM
-    for dtm_err = [0 1e-2 1e-1 1e0 2e0 5e0 1e1 2e1 5e1]
+    for dtm_err = [0 1e-2 1e-1 1e0 2e0 5e0 1e1]
         dir = [dir_name sprintf('dtm_%.0d/', dtm_err)];
         if ~isdir(dir)
             mkdir(dir);
@@ -50,7 +50,7 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, n_rays, span_angle, f
     
     %LIDAR
     lidar = readbin_v000([dir_name 'mlidar.bin'],2+2*n_rays);
-    for lidar_err = [0 1e-2 2e-2 5e-2 1e-1 2e-1 5e-1 1e0 2e0 5e0 1e1 2e1 5e1]
+    for lidar_err = [0 1e-4 1e-3 1e-2 1e-1 1e0 5e0]
         dir = [dir_name sprintf('lidar_%.0d/', lidar_err)];
         if ~isdir(dir)
             mkdir(dir);
