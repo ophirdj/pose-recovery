@@ -11,7 +11,9 @@ PATHS = {...
         };
     
 show_only = 0;
-sim_len = 250;
+sim_len = 1000;
+
+gcp;
 
 for k = 1:length(PATHS)
     PATH = PATHS{k};
@@ -47,50 +49,58 @@ for k = 1:length(PATHS)
         close all;
         
         % IMU
-        for linear_err = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0]
-            for angular_err = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0]
-                try
-                dir = [PATH sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
-                ImuLidarNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
-                    [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
-                close all;
-                catch
-                    fprintf(F_LOG, '%s %.0d %.0d\n', 'IMU', linear_err, angular_err);
-                end
+        linear_errs = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0];
+        angular_errs = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0];
+        [lin, ang] = meshgrid(linear_errs, angular_errs);
+        lin = lin(:);
+        ang = ang(:);
+        parfor j = 1:length(lin)
+            try
+            linear_err = lin(j);
+            angular_err = ang(j);
+            dir = [PATH sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
+            ImuLidarNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
+                [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
+            close all;
+            catch
+                fprintf(F_LOG, '%s %.0d %.0d\n', 'IMU', linear_err, angular_err);
             end
         end
 
         % DTM
-        for dtm_err = [0 1e-2 1e-1 1e0 2e0 5e0 1e1]
+        dtm_errs = [0 1e-2 1e-1 1e0 2e0 5e0 1e1];
+        for dtm_err = 1:length(dtm_errs)
             try
-            dir = [PATH sprintf('dtm_%.0d/', dtm_err)];
+            dir = [PATH sprintf('dtm_%.0d/', dtm_errs(dtm_err))];
             ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
                     [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
             close all;
             catch
-                fprintf(F_LOG, '%s %.0d\n', 'DTM', dtm_err);
+                fprintf(F_LOG, '%s %.0d\n', 'DTM', dtm_errs(dtm_err));
             end
         end
 
         % LIDAR
-        for lidar_err = [0 1e-4 1e-3 1e-2 1e-1 1e0 5e0]
+        lidar_errs = [0 1e-4 1e-3 1e-2 1e-1 1e0 5e0];
+        parfor lidar_err = 1:length(lidar_errs)
             try
-            dir = [PATH sprintf('lidar_%.0d/', lidar_err)];
+            dir = [PATH sprintf('lidar_%.0d/', lidar_errs(lidar_err))];
             ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
                     [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
             close all;
             catch
-                fprintf(F_LOG, '%s %.0d\n', 'LIDAR', lidar_err);
+                fprintf(F_LOG, '%s %.0d\n', 'LIDAR', lidar_errs(lidar_err));
             end
         end
 
         %Batch Size
-        for w = 10:-2:2
+        windows = 10:-2:2;
+        parfor w = 1:length(windows)
             try
             dir_imu = [PATH sprintf('imu_%.0d_%.0d/', 1e-1, 1e-1)];
             dir_lidar = [PATH sprintf('lidar_%.0d/', 1e-2)];
             dir_dtm = [PATH sprintf('dtm_%.0d/', 1e-1)];
-            dir = [PATH sprintf('window_%d/', w)];
+            dir = [PATH sprintf('window_%d/', windows(w))];
             if ~isdir(dir)
                 mkdir(dir);
             end
@@ -98,7 +108,7 @@ for k = 1:length(PATHS)
                 [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
             close all;
             catch
-                fprintf(F_LOG, '%s %d\n', 'Batch', w);
+                fprintf(F_LOG, '%s %d\n', 'Batch', windows(w));
             end
         end
     end
