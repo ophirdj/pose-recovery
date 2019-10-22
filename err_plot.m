@@ -53,7 +53,7 @@ for linear_err = 1:length(linear_errs)
         if size(err, 2) < MIN_SAMPLE_SIZE
             continue
         end
-        p = [1:floor(4*size(err, 2)/10), floor(6*size(err, 2)/10):size(err, 2)];
+        p = 1:size(err, 2);...[1:floor(4*size(err, 2)/10), floor(6*size(err, 2)/10):size(err, 2)];
         imu(linear_err,angular_err,1)=mean(sqrt(sum(err(2:4,p).^2)));
         imu(linear_err,angular_err,2)=mean(sqrt(sum(err(5:7,p).^2)));
         imu_legal(linear_err,angular_err)=imu_legal(linear_err,angular_err)+1;
@@ -71,7 +71,7 @@ for dtm_err = 1:length(dtm_errs)
     if size(err, 2) < MIN_SAMPLE_SIZE
         continue
     end
-    p = [1:floor(4*size(err, 2)/10), floor(6*size(err, 2)/10):size(err, 2)];
+    p = 1:size(err, 2);...[1:floor(4*size(err, 2)/10), floor(6*size(err, 2)/10):size(err, 2)];
     dtm(dtm_err,1)=mean(sqrt(sum(err(2:4,p).^2)));
     dtm(dtm_err,2)=mean(sqrt(sum(err(5:7,p).^2)));
     dtm_legal(dtm_err)=dtm_legal(dtm_err)+1;
@@ -88,7 +88,7 @@ for lidar_err = 1:length(lidar_errs)
     if size(err, 2) < MIN_SAMPLE_SIZE
         continue
     end
-    p = [1:floor(4*size(err, 2)/10), floor(6*size(err, 2)/10):size(err, 2)];
+    p = 1:size(err, 2);...[1:floor(4*size(err, 2)/10), floor(6*size(err, 2)/10):size(err, 2)];
     lidar(lidar_err,1)=mean(sqrt(sum(err(2:4,p).^2)));
     lidar(lidar_err,2)=mean(sqrt(sum(err(5:7,p).^2)));
     lidar_legal(lidar_err)=lidar_legal(lidar_err)+1;
@@ -111,7 +111,7 @@ for window = 1:length(windows)
     rot(rot>pi)=rot(rot>pi)-2*pi;
     rot(rot<-pi)=rot(rot<-pi)+2*pi;
     
-    p = [1:floor(4*size(err, 2)/10), floor(6*size(err, 2)/10):size(err, 2)];
+    p = 1:size(err, 2);...[1:floor(4*size(err, 2)/10), floor(6*size(err, 2)/10):size(err, 2)];
     window_err(window,1)=mean(sqrt(sum(err(2:4,p).^2)));
     window_err(window,2)=mean(sqrt(sum(rot(:,p).^2)));
     window_legal(window)=window_legal(window)+1;

@@ -11,106 +11,89 @@ PATHS = {...
         };
     
 show_only = 0;
-sim_len = 1000;
+sim_len = 300;
 
-gcp;
+scenarios = {};
+scenario_names = {};
+logs = {};
+ls = {};
 
 for k = 1:length(PATHS)
     PATH = PATHS{k};
-    
     F_LOG = fopen([PATH 'log.txt'],'w');
-
+    ls{end+1} = F_LOG;
     out_err = [PATH 'err.bin'];
     out_res = [PATH 'res.bin'];
     in_mnav = [PATH 'mnav.bin'];
-
     window = 3;
     
-%     for dtm_err = [1e-1]
-%         try
-%         dir = [PATH sprintf('dtm_%.0d/', dtm_err)];
-%         ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
+%     % Ground Truth
+%     scenario_names{end+1} = 'Ground Truth';
+%     logs{end+1} = F_LOG;
+%     scenarios{end+1} = @()...
+%     ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
+%         [PATH 'meta.bin'], [PATH 'res.bin'], [PATH 'err.bin'], window, DTM, sim_len, show_only);
+%     
+%     % IMU
+%     for linear_err = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0]
+%         for angular_err = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0]
+%             scenario_names{end+1} = sprintf('%s %.0d %.0d', 'IMU', linear_err, angular_err);
+%             logs{end+1} = F_LOG;
+%             dir = [PATH sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
+%             scenarios{end+1} = @()...
+%             ImuLidarNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
 %                 [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
-% %         close all;
-%         catch
-%             fprintf(F_LOG, '%s %.0d\n', 'DTM', dtm_err);
 %         end
 %     end
+    
+    % DTM
+    for dtm_err = [0 1e-2 1e-1 1e0 2e0 5e0 1e1]
+        scenario_names{end+1} = sprintf('%s %.0d', 'DTM', dtm_err);
+        logs{end+1} = F_LOG;
+        dir = [PATH sprintf('dtm_%.0d/', dtm_err)];
+        scenarios{end+1} = @()...
+        ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
+                [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
+    end
+    
+%     % LIDAR
+%     for lidar_err = [0 1e-4 1e-3 1e-2 1e-1 1e0 5e0]
+%         scenario_names{end+1} = sprintf('%s %.0d\n', 'LIDAR', lidar_err);
+%         logs{end+1} = F_LOG;
+%         dir = [PATH sprintf('lidar_%.0d/', lidar_err)];
+%         scenarios{end+1} = @()...
+%         ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
+%                 [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
+%     end
+%     
+%     %Batch Size
+%     for w = 10:-2:2
+%         scenario_names{end+1} = sprintf('%s %d\n', 'Batch', w);
+%         logs{end+1} = F_LOG;
+%         
+%         dir_imu = [PATH sprintf('imu_%.0d_%.0d/', 1e-1, 1e-1)];
+%         dir_lidar = [PATH sprintf('lidar_%.0d/', 1e-2)];
+%         dir_dtm = [PATH sprintf('dtm_%.0d/', 1e-1)];
+%         dir = [PATH sprintf('window_%d/', w)];
+%         if ~isdir(dir)
+%             mkdir(dir);
+%         end
+%         scenarios{end+1} = @()...
+%         ImuLidarNavigator([PATH 'mnav.bin'], [dir_imu 'eimu.bin'], [dir_dtm 'mlidar.bin'], ...
+%             [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
+%     end
+end
 
+parfor j = 1:length(scenarios)
     try
-    % Ground Truth
-    ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
-        [PATH 'meta.bin'], [PATH 'res.bin'], [PATH 'err.bin'], window, DTM, sim_len, show_only);
-    catch
-        fprintf(F_LOG, '%s\n', 'Ground Truth');
-    end
-
-    if ~show_only
+        fprintf('%s\n', scenario_names{j});
+        scenarios{j}();
         close all;
-        
-        % IMU
-        linear_errs = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0];
-        angular_errs = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0];
-        [lin, ang] = meshgrid(linear_errs, angular_errs);
-        lin = lin(:);
-        ang = ang(:);
-        parfor j = 1:length(lin)
-            try
-            linear_err = lin(j);
-            angular_err = ang(j);
-            dir = [PATH sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
-            ImuLidarNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
-                [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
-            close all;
-            catch
-                fprintf(F_LOG, '%s %.0d %.0d\n', 'IMU', linear_err, angular_err);
-            end
-        end
-
-        % DTM
-        dtm_errs = [0 1e-2 1e-1 1e0 2e0 5e0 1e1];
-        for dtm_err = 1:length(dtm_errs)
-            try
-            dir = [PATH sprintf('dtm_%.0d/', dtm_errs(dtm_err))];
-            ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
-                    [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
-            close all;
-            catch
-                fprintf(F_LOG, '%s %.0d\n', 'DTM', dtm_errs(dtm_err));
-            end
-        end
-
-        % LIDAR
-        lidar_errs = [0 1e-4 1e-3 1e-2 1e-1 1e0 5e0];
-        parfor lidar_err = 1:length(lidar_errs)
-            try
-            dir = [PATH sprintf('lidar_%.0d/', lidar_errs(lidar_err))];
-            ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
-                    [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
-            close all;
-            catch
-                fprintf(F_LOG, '%s %.0d\n', 'LIDAR', lidar_errs(lidar_err));
-            end
-        end
-
-        %Batch Size
-        windows = 10:-2:2;
-        parfor w = 1:length(windows)
-            try
-            dir_imu = [PATH sprintf('imu_%.0d_%.0d/', 1e-1, 1e-1)];
-            dir_lidar = [PATH sprintf('lidar_%.0d/', 1e-2)];
-            dir_dtm = [PATH sprintf('dtm_%.0d/', 1e-1)];
-            dir = [PATH sprintf('window_%d/', windows(w))];
-            if ~isdir(dir)
-                mkdir(dir);
-            end
-            ImuLidarNavigator([PATH 'mnav.bin'], [dir_imu 'eimu.bin'], [dir_dtm 'mlidar.bin'], ...
-                [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
-            close all;
-            catch
-                fprintf(F_LOG, '%s %d\n', 'Batch', windows(w));
-            end
-        end
+    catch
+        fprintf(logs{j}, '%s\n', scenario_names{j});
     end
-    fclose(F_LOG);
+end
+
+for k = 1:length(ls)
+    fclose(ls{k});
 end

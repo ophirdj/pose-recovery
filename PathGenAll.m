@@ -40,7 +40,7 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, n_rays, span_angle, f
         if ~isdir(dir)
             mkdir(dir);
         end
-        errDTM = DTM + dtm_err .* (2.* rand(size(DTM)) - 1);
+        errDTM = DTM + dtm_err .* randn(size(DTM));
         success = LidarGen([dir_name 'mnav.bin'], [dir 'mlidar.bin'], n_rays, span_angle, errDTM, cellsize);
         
         if ~success

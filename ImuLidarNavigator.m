@@ -66,7 +66,7 @@ while (~feof(F_IMU))
         imu=imu_data(2:7);
         lidar=lidar_data(2:end);
         
-        fprintf('%d\n', pr_count);
+%         fprintf('%d\n', pr_count);
         
         if pr_count < window_size
             pos = true_val(2:4);
