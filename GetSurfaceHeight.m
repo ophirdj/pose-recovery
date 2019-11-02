@@ -16,7 +16,7 @@ k_high = ceil(y ./ cellsize);
 legal = j_low >= 1 & j_high <= size(DTM, 1) & ...
         k_low >= 1 & k_high <= size(DTM, 2);
 
-z = nan(size(x));
+z = 9999*ones(size(x));
     
 j_low = j_low(legal);
 j_high = j_high(legal);
