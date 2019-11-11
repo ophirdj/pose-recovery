@@ -115,7 +115,7 @@ while (~feof(F_IMU))
          0 0 0 0 0 0; ...
          ];
  
-        f = @(x)(A*x + B*u);
+        f = @(x)(ins_nav(x, imu, g, dt));
         h = @(x)(CalcRayDistances(x(1:3), euler2dcm_v000(x(7:9)) * diag([1 1 -1]), rays, DTM, cellsize)');
         z = lidar;
         
@@ -304,3 +304,14 @@ fprintf('rol: %d\n', 180/pi*x(floor(length(x)*9/10)));
 
 end
 
+function [xf] = ins_nav(x, imu, g, dt)
+    [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(euler2dcm_v000(x(7:9)), x(4:6), x(1:3), imu(1:3) + x(13:15) + x(16:18)*dt, imu(4:6), g, dt, 0);
+     xf = zeros(size(x));
+     
+    xf(1:3) = pos; %position
+    xf(4:6) = vel_n; %velocity
+    xf(7:9) = dcm2euler_v000(Cbn); %attitude
+    xf(10:12) = imu(4:6)*dt; %angular_velocity
+    xf(13:15) = x(13:15); %linear_bias
+    xf(16:18) = x(16:18); %linear_drift
+end

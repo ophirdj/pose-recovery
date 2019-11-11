@@ -46,7 +46,7 @@ while height > 0
             Q(2) > cellsize && Q(2) < cellsize * size(DTM, 2)
         height = Q(3) - GetSurfaceHeight(Q(1), Q(2), DTM, cellsize);
     else
-        distance = inf;
+        distance = dist_high;
         return;
     end
 end
