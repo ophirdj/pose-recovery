@@ -10,7 +10,7 @@ PATHS = {...
         'C:\Users\Ophir\matlab_workspace\trajectories\Curve_100_20\',...
         };
     
-show_only = 2;
+show_only = 0;
 sim_len = 150;
 
 scenarios = {};
@@ -41,7 +41,7 @@ for k = 1:length(PATHS)
             logs{end+1} = F_LOG;
             dir = [PATH sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
             scenarios{end+1} = @()...
-            ImuLidarNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
+            KalmanImuLidarNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
                 [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
         end
     end
@@ -52,7 +52,7 @@ for k = 1:length(PATHS)
         logs{end+1} = F_LOG;
         dir = [PATH sprintf('dtm_%.0d/', dtm_err)];
         scenarios{end+1} = @()...
-        ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
+        KalmanImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
                 [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
     end
     
@@ -62,26 +62,10 @@ for k = 1:length(PATHS)
         logs{end+1} = F_LOG;
         dir = [PATH sprintf('lidar_%.0d/', lidar_err)];
         scenarios{end+1} = @()...
-        ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
+        KalmanImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
                 [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
     end
-%     
-%     %Batch Size
-%     for w = 10:-2:2
-%         scenario_names{end+1} = sprintf('%s %d\n', 'Batch', w);
-%         logs{end+1} = F_LOG;
-%         
-%         dir_imu = [PATH sprintf('imu_%.0d_%.0d/', 1e-1, 1e-1)];
-%         dir_lidar = [PATH sprintf('lidar_%.0d/', 1e-2)];
-%         dir_dtm = [PATH sprintf('dtm_%.0d/', 1e-1)];
-%         dir = [PATH sprintf('window_%d/', w)];
-%         if ~isdir(dir)
-%             mkdir(dir);
-%         end
-%         scenarios{end+1} = @()...
-%         ImuLidarNavigator([PATH 'mnav.bin'], [dir_imu 'eimu.bin'], [dir_dtm 'mlidar.bin'], ...
-%             [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
-%     end
+    
 end
 
 parfor j = 1:length(scenarios)

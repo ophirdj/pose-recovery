@@ -1,4 +1,4 @@
-function [ distances ] = CalcRayDistances( P, R, rays, DTM, cellsize )
+function [ distances, points_of_intersect, rays_g ] = CalcRayDistances( P, R, rays, DTM, cellsize )
 %CalcRayDistances Calculate distances to surface along given rays.
 %   P(3, 1)    - Global camera position
 %   R(3, 3)    - Global camera rotation
@@ -12,11 +12,12 @@ if size(P, 1) == 1
 end
 
 % Convert to global coordinates
-rays = R * rays;
+rays_g = R * rays;
 
-distances = zeros(1, size(rays, 2));
-for n = 1:size(rays, 2)
-    distances(n) = RayTrace(P, rays(:, n), DTM, cellsize);
+distances = zeros(1, size(rays_g, 2));
+points_of_intersect = zeros(3, size(rays_g, 2));
+for n = 1:size(rays_g, 2)
+    [distances(n), points_of_intersect(:,n)] = RayTrace(P, rays_g(:, n), DTM, cellsize);
 end
 
 end

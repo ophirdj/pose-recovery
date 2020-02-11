@@ -1,4 +1,4 @@
-function [ distance ] = RayTrace( P, ray, DTM, cellsize, epsilon, lambda, beta )
+function [ distance, Q ] = RayTrace( P, ray, DTM, cellsize, epsilon, lambda, beta )
 % GETDISTANCETOGROUD Get distance from point P to ground along the ray.
 %   P(3, 1)   - 3D global camera position
 %   ray(3, 1) - 3D global ray direction
@@ -27,6 +27,7 @@ ray = ray / norm(ray);
 dist_high = 0;
 if P(3) - GetSurfaceHeight(P(1), P(2), DTM, cellsize) <= 0
     distance = 0;
+    Q = P;
     return;
 end
 

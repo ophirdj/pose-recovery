@@ -1,5 +1,5 @@
 function [ z ] = GetSurfaceHeight( x, y, DTM, cellsize )
-%GetSurfaceHeight Get height of surface at point (x, y) or NaN if point is
+%GetSurfaceHeight Get height of surface at point (x, y) or 9999 if point is
 %outside the DTM.
 % Use first order approximation to determine height.
 %   x - x pos (can be a vector)
