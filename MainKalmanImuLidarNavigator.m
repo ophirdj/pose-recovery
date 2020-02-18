@@ -10,6 +10,9 @@ PATHS = {...
         'C:\Users\Ophir\matlab_workspace\trajectories\Curve_100_20\',...
         };
     
+ERR_FILENAME = 'err_kalman.bin';
+RES_FILENAME = 'res_kalman.bin';
+
 show_only = 0;
 sim_len = 150;
 
@@ -22,17 +25,13 @@ for k = 1:length(PATHS)
     PATH = PATHS{k};
     F_LOG = fopen([PATH 'log.txt'],'w');
     ls{end+1} = F_LOG;
-    out_err = [PATH 'err.bin'];
-    out_res = [PATH 'res.bin'];
-    in_mnav = [PATH 'mnav.bin'];
-    window = 3;
     
     % Ground Truth
     scenario_names{end+1} = 'Ground Truth';
     logs{end+1} = F_LOG;
     scenarios{end+1} = @()...
     KalmanImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
-        [PATH 'meta.bin'], [PATH 'res.bin'], [PATH 'err.bin'], window, DTM, sim_len, show_only);
+        [PATH 'meta.bin'], [PATH RES_FILENAME], [PATH ERR_FILENAME], window, DTM, sim_len, show_only);
     
     % IMU
     for linear_err = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0]
@@ -42,7 +41,7 @@ for k = 1:length(PATHS)
             dir = [PATH sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
             scenarios{end+1} = @()...
             KalmanImuLidarNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
-                [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
+                [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], window, DTM, sim_len, show_only);
         end
     end
     
@@ -53,7 +52,7 @@ for k = 1:length(PATHS)
         dir = [PATH sprintf('dtm_%.0d/', dtm_err)];
         scenarios{end+1} = @()...
         KalmanImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
-                [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
+                [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], window, DTM, sim_len, show_only);
     end
     
     % LIDAR
@@ -63,11 +62,11 @@ for k = 1:length(PATHS)
         dir = [PATH sprintf('lidar_%.0d/', lidar_err)];
         scenarios{end+1} = @()...
         KalmanImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
-                [PATH 'meta.bin'], [dir 'res.bin'], [dir 'err.bin'], window, DTM, sim_len, show_only);
+                [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], window, DTM, sim_len, show_only);
     end
     
 end
-
+%%
 parfor j = 1:length(scenarios)
 % for j = 1:length(scenarios)
     try
@@ -82,3 +81,4 @@ end
 for k = 1:length(ls)
     fclose(ls{k});
 end
+

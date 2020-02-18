@@ -13,6 +13,11 @@ freqs = [ ...
     100 ...
     ];
 
+NAVIGATOR = 'kalman';
+% NAVIGATOR = 'imu_lidar';
+ERR_FILENAME = ['err_' NAVIGATOR '.bin'];
+RES_FILENAME = ['res_' NAVIGATOR '.bin'];
+
 MIN_SAMPLE_SIZE = 50;
     
 %IMU
@@ -45,7 +50,7 @@ freq = freqs(k);
 imu = zeros(length(linear_errs), length(angular_errs), 2);
 for linear_err = 1:length(linear_errs)
     for angular_err = 1:length(angular_errs)
-        F_ERR = [PATH sprintf('imu_%.0d_%.0d/err.bin', linear_errs(linear_err), angular_errs(angular_err))];
+        F_ERR = [PATH sprintf('imu_%.0d_%.0d/%s', linear_errs(linear_err), angular_errs(angular_err), ERR_FILENAME)];
         if (linear_err) == 1 && (angular_err == 1)
             F_ERR = [PATH 'err.bin'];
         end
@@ -66,7 +71,7 @@ imu_mean = imu_mean + imu;
 % DTM
 dtm = zeros(length(dtm_errs),2);
 for dtm_err = 1:length(dtm_errs)
-    F_ERR = [PATH sprintf('dtm_%.0d/err.bin', dtm_errs(dtm_err))];
+    F_ERR = [PATH sprintf('dtm_%.0d/%s', dtm_errs(dtm_err), ERR_FILENAME)];
     err=readbin_v000(F_ERR,11);
     if size(err, 2) < MIN_SAMPLE_SIZE
         continue
@@ -83,7 +88,7 @@ dtm_mean = dtm_mean + dtm;
 %LIDAR
 lidar = zeros(length(lidar_errs),2);
 for lidar_err = 1:length(lidar_errs)
-    F_ERR = [PATH sprintf('lidar_%.0d/err.bin', lidar_errs(lidar_err))];
+    F_ERR = [PATH sprintf('lidar_%.0d/%s', lidar_errs(lidar_err), ERR_FILENAME)];
     err=readbin_v000(F_ERR,11);
     if size(err, 2) < MIN_SAMPLE_SIZE
         continue
@@ -100,7 +105,7 @@ lidar_mean = lidar_mean + lidar;
 %Window
 window_err = zeros(length(windows),2);
 for window = 1:length(windows)
-    F_ERR = [PATH sprintf('window_%d/err.bin', windows(window))];
+    F_ERR = [PATH sprintf('window_%d/%s', windows(window), ERR_FILENAME)];
     err=readbin_v000(F_ERR,11);
     if size(err, 2) < MIN_SAMPLE_SIZE
         continue
