@@ -1,11 +1,11 @@
 function success = ImuLidarNavigator( in_mnav, in_mimu, in_mlidar, ...
-    in_meta, out_res, out_err, window_size, DTM, sim_len, show_only )
+    in_meta, out_res, out_err, out_prv, window_size, DTM, sim_len, show_only )
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
-if nargin < 9
+if nargin < 10
     sim_len = 0;
 end
-if nargin < 10
+if nargin < 11
     show_only = 0;
 end
 
@@ -25,6 +25,7 @@ F_LIDAR=fopen(in_mlidar,'rb');
 F_TRU=fopen(in_mnav,'rb');
 F_RES=fopen(out_res,'wb');
 F_ERR=fopen(out_err,'wb');
+F_PRV=fopen(out_prv,'wb');
 
 %Use constant scale for all observations
 [Rn, Re, g, sL, cL, WIE_E]=geoparam_v000([0 0 0]');
@@ -66,7 +67,7 @@ while (~feof(F_IMU))
         imu=imu_data(2:7);
         lidar=lidar_data(2:end);
         
-%         fprintf('%d\n', pr_count);
+        fprintf('%d\n', pr_count);
         
         if pr_count < window_size
             pos = true_val(2:4);
@@ -156,6 +157,7 @@ fclose(F_LIDAR);
 fclose(F_TRU);
 fclose(F_RES);
 fclose(F_ERR);
+fclose(F_PRV);
 if show_only == 0
     return;
 end

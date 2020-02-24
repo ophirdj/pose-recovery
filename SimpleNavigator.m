@@ -1,121 +1,112 @@
-clear;
-fclose all;
-PATH='C:\Users\Ophir\matlab_workspace\trajectories\circle100\';
+function success = SimpleNavigator( in_mnav, in_mimu, in_mlidar, ...
+    in_meta, out_res, out_err, out_prv, window_size, DTM, sim_len, show_only )
+%UNTITLED3 Summary of this function goes here
+%   Detailed explanation goes here
+if nargin < 10
+    sim_len = 0;
+end
+if nargin < 11
+    show_only = 0;
+end
 
-%% Navigate
-% F_IMU=fopen([PATH 'mimu.bin'],'rb'); % Errorless
-F_IMU=fopen([PATH 'eimu.bin'],'rb'); % IMU error
-F_TRU=fopen([PATH 'mnav.bin'],'rb');
-F_RES=fopen([PATH 'res.bin'],'wb');
-F_ERR=fopen([PATH 'err.bin'],'wb');
+F_META = fopen(in_meta, 'rb');
+freq_Hz = fread(F_META, 1, 'double');
+dt = 1/freq_Hz;
+n_rays = fread(F_META, 1, 'double');
+span_angle = fread(F_META, 1, 'double');
+cellsize = fread(F_META, 1, 'double');
+fclose(F_META);
 
-dt=1/100;
-pos_g=[0 0 0]';
+success = true;
+if show_only == 0 || show_only == 2
+
+F_IMU=fopen(in_mimu,'rb');
+F_LIDAR=fopen(in_mlidar,'rb');
+F_TRU=fopen(in_mnav,'rb');
+F_RES=fopen(out_res,'wb');
+F_ERR=fopen(out_err,'wb');
 
 %Use constant scale for all observations
-[Rn, Re, g, sL, cL, WIE_E]=geoparam_v000(pos_g);
+[Rn, Re, g, sL, cL, WIE_E]=geoparam_v000([0 0 0]');
+
 
 %%read the input data from the files
 imu_data=fread(F_IMU,7,'double');
 true_val = fread(F_TRU, 10, 'double');
+lidar_data=fread(F_LIDAR,1+n_rays,'double');
 
 % skip first record (wierd bug - record is not correct)
 imu_data=fread(F_IMU,7,'double');
 true_val = fread(F_TRU, 10, 'double');
+lidar_data=fread(F_LIDAR,1+n_rays,'double');
 
 
 % Assume we know initial position, velocity, and orientation (read it from
 % true_val)
 pos = true_val(2:4);
 vel_n = true_val(5:7);
-Cbn = euler2dcm_v000(true_val(8:10));
+att = true_val(8:10);
+Cbn = euler2dcm_v000(att);
+lidar = lidar_data(2:end);
+
+% LIDAR  model
+rays = GenerateRays(span_angle / ((n_rays-1)/2), ((n_rays-1)/2));
+
 
 while (~feof(F_IMU))
-        pr_coun=imu_data(1);
-        imu=imu_data(2:7);
-        
+    pr_count=imu_data(1);
+    imu=imu_data(2:7);
+    lidar=lidar_data(2:end);
+
+    fprintf('%d\n', pr_count);
+
         [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(Cbn, vel_n, pos, imu(1:3), imu(4:6), g, dt, 0);
         
+        att = dcm2euler_v000(Cbn);
+        
+
         % Calculate position error
         pos_err=pos-true_val(2:4);
         
         % Calculate attitude error
-        true_Cbn = euler2dcm_v000(true_val(8:10));
-        att_err = dcm2euler_v000(Cbn' * true_Cbn);
+        att_err = att-true_val(8:10);
+        
+        % Calculate LIDAR error
+        lidar_err = CalcRayDistances(pos, Cbn * diag([1 1 -1]), rays, DTM, cellsize)'-lidar;
+        lidar_err_mean = mean(lidar_err(~isnan(lidar_err)));
+        lidar_err_num_valid = sum(~isnan(lidar_err));
         
         % Write recovered results and errors
-        fwrite(F_ERR,[pr_coun;pos_err;att_err;-1;-1;-1;-1],'double');
-        fwrite(F_RES,[pr_coun;pos; dcm2euler_v000(Cbn); Cbn'*vel_n],'double');
+        fwrite(F_ERR,[pr_count;pos_err;att_err;lidar_err_mean;lidar_err_num_valid;-1;-1],'double');
+        fwrite(F_RES,[pr_count;pos; att; Cbn'*vel_n],'double');
         
-        if any(abs(pos_err)>0.2)
+        if any(abs(pos_err)>50)
             success = false;
             break;
         end
-        
-        if any(abs(pos_err)>0.2)
-            success = false;
+
+        if sim_len == 1
+            success = true;
             break;
+        elseif sim_len > 0
+            sim_len = sim_len - 1;
         end
         
         % Read next records
         imu_data=fread(F_IMU,7,'double');
         true_val = fread(F_TRU, 10, 'double');
+        lidar_data=fread(F_LIDAR,1+n_rays,'double');
 end
 
 fclose(F_IMU);
+fclose(F_LIDAR);
 fclose(F_TRU);
 fclose(F_RES);
 fclose(F_ERR);
-
+if show_only == 0
+    return;
+end
+end
 %% Show results
-
-err=readbin_v000([PATH 'err.bin'],11);
-res=readbin_v000([PATH 'res.bin'],10);
-tru=readbin_v000([PATH 'mnav.bin'],10);
-
-% return;
-figure;
-plot(res(2,:), res(3,:), 'b');
-hold on;
-% figure;
-plot(tru(2,:),tru(3,:),'r');
-grid;
-pbaspect([1 1 1]);
-daspect([1 1 1]);
-legend('Recovered', 'Original');
-
-figure;
-plot(err(2,:));
-title('Err x');
-hold on;
-grid;
-
-figure;
-plot(err(3,:));
-title('Err y');
-hold on;
-grid;
-
-figure;
-plot(err(4,:));
-title('Err z');
-hold on;
-grid;
-
-figure;
-plot(err(5,:));
-title('Err yaw');
-hold on;
-grid;
-
-figure;
-plot(err(6,:));
-title('Err pitch');
-hold on;
-grid;
-
-figure;
-plot(err(7,:));
-title('Err roll');
-hold on;
-grid;
+err_plot_nav(out_err,out_res,in_mnav,DTM,cellsize,success);
+end

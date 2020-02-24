@@ -9,15 +9,15 @@ function [ distance, Q ] = RayTrace( P, ray, DTM, cellsize, epsilon, lambda, bet
 %   beta      - [OPTIONAL] Ray trace extention rate (should be > 1)
 
 if nargin < 7 || beta <= 1
-    beta = 1 + 3e-1;
+    beta = 1.2;
 end
 
 if nargin < 6 || lambda <= 0
-    lambda = 70;
+    lambda = 200;
 end
 
 if nargin < 5 || epsilon <= 0
-    epsilon = 1e-10;
+    epsilon = 1e-3;
 end
 
 % normalize ray;

@@ -11,10 +11,10 @@ PATHS = {...
 %         'C:\Users\Ophir\matlab_workspace\trajectories\Curve_100_20\',...
         };
     
-ERR_FILENAME = 'err_imu_lidar.bin';
-RES_FILENAME = 'res_imu_lidar.bin';
-PRV_FILENAME = 'prv_imu_lidar.bin';
-    
+ERR_FILENAME = 'err_unscented.bin';
+RES_FILENAME = 'res_unscented.bin';
+PRV_FILENAME = 'prv_unscented.bin';
+
 show_only = 0;
 sim_len = 3000;
 
@@ -27,13 +27,12 @@ for k = 1:length(PATHS)
     PATH = PATHS{k};
     F_LOG = fopen([PATH 'log.txt'],'w');
     ls{end+1} = F_LOG;
-    window = 3;
     
     % Ground Truth
     scenario_names{end+1} = 'Ground Truth';
     logs{end+1} = F_LOG;
     scenarios{end+1} = @()...
-    ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
+    UnscentedKalmanNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
         [PATH 'meta.bin'], [PATH RES_FILENAME], [PATH ERR_FILENAME], [PATH PRV_FILENAME], ...
         window, DTM, sim_len, show_only);
     
@@ -44,7 +43,7 @@ for k = 1:length(PATHS)
 %             logs{end+1} = F_LOG;
 %             dir = [PATH sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
 %             scenarios{end+1} = @()...
-%             ImuLidarNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
+%             UnscentedKalmanNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
 %                 [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...,
 %                 window, DTM, sim_len, show_only);
 %         end
@@ -56,7 +55,7 @@ for k = 1:length(PATHS)
 %         logs{end+1} = F_LOG;
 %         dir = [PATH sprintf('dtm_%.0d/', dtm_err)];
 %         scenarios{end+1} = @()...
-%         ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
+%         UnscentedKalmanNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
 %                 [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...,
 %                 window, DTM, sim_len, show_only);
 %     end
@@ -67,31 +66,14 @@ for k = 1:length(PATHS)
 %         logs{end+1} = F_LOG;
 %         dir = [PATH sprintf('lidar_%.0d/', lidar_err)];
 %         scenarios{end+1} = @()...
-%         ImuLidarNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
+%         UnscentedKalmanNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
 %                 [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...,
 %                 window, DTM, sim_len, show_only);
 %     end
-
-%     
-%     %Batch Size
-%     for w = 10:-2:2
-%         scenario_names{end+1} = sprintf('%s %d\n', 'Batch', w);
-%         logs{end+1} = F_LOG;
-%         
-%         dir_imu = [PATH sprintf('imu_%.0d_%.0d/', 1e-1, 1e-1)];
-%         dir_lidar = [PATH sprintf('lidar_%.0d/', 1e-2)];
-%         dir_dtm = [PATH sprintf('dtm_%.0d/', 1e-1)];
-%         dir = [PATH sprintf('window_%d/', w)];
-%         if ~isdir(dir)
-%             mkdir(dir);
-%         end
-%         scenarios{end+1} = @()...
-%         ImuLidarNavigator([PATH 'mnav.bin'], [dir_imu 'eimu.bin'], [dir_dtm 'mlidar.bin'], ...
-%             [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...,
-%                 window, DTM, sim_len, show_only);
-%     end
+    
 end
-
+%%
+% parfor j = 1:length(scenarios)
 for j = 1:length(scenarios)
     try
         fprintf('%s\n', scenario_names{j});
@@ -110,3 +92,4 @@ end
 for k = 1:length(ls)
     fclose(ls{k});
 end
+

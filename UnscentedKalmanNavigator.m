@@ -1,11 +1,11 @@
-function success = KalmanImuLidarNavigator( in_mnav, in_mimu, in_mlidar, ...
-    in_meta, out_res, out_err, window_size, DTM, sim_len, show_only )
+function success = UnscentedKalmanNavigator( in_mnav, in_mimu, in_mlidar, ...
+    in_meta, out_res, out_err, out_prv, window_size, DTM, sim_len, show_only )
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
-if nargin < 9
+if nargin < 10
     sim_len = 0;
 end
-if nargin < 10
+if nargin < 11
     show_only = 0;
 end
 
@@ -25,6 +25,7 @@ F_LIDAR=fopen(in_mlidar,'rb');
 F_TRU=fopen(in_mnav,'rb');
 F_RES=fopen(out_res,'wb');
 F_ERR=fopen(out_err,'wb');
+F_PRV=fopen(out_prv,'wb');
 
 %Use constant scale for all observations
 [Rn, Re, g, sL, cL, WIE_E]=geoparam_v000([0 0 0]');
@@ -43,7 +44,8 @@ lidar_data=fread(F_LIDAR,1+n_rays,'double');
 
 % Assume we know initial position, velocity, and orientation (read it from
 % true_val)
-pos = true_val(2:4);
+pos_init = true_val(2:4);
+pos = pos_init;
 vel_n = true_val(5:7);
 att = true_val(8:10);
 Cbn = euler2dcm_v000(att);
@@ -55,66 +57,66 @@ rays = GenerateRays(span_angle / ((n_rays-1)/2), ((n_rays-1)/2));
 
 % Kalman filter initialization
 
-% x = [position velocity attitude angular_velocity linear_bias
-% linear_drift]
-x = [pos' vel_n' att' 0 0 0 0 0 0 0 0 0]';
+% x = [position velocity attitude linear_bias linear_drift]
+x = [0 0 0 vel_n' att' 0 0 0 0 0 0]';
 
-f = @(x,u)(ins_nav(x, u, g, dt));
-h = @(x)(kalman_ray_trace(x, rays, DTM, cellsize));
+f = @(x,u)(ins_nav(x, u, g, dt, pos_init));
+h = @(x)(kalman_ray_trace(x, rays, DTM, cellsize, pos_init));
 
 kalman = unscentedKalmanFilter(f,h,x);
 
-kalman.Alpha = 0.1;
-
+kalman.Alpha = 0.005;
 
 while (~feof(F_IMU))
     pr_count=imu_data(1);
     imu=imu_data(2:7);
     lidar=lidar_data(2:end);
 
-%     fprintf('%d\n', pr_count);
+    fprintf('%d\n', pr_count);
         
-        predict(kalman, imu);
-        x = correct(kalman, lidar);
-        
-        pos = x(1:3);
-        vel = x(4:6);
-        att = x(7:9);
-        Cbn = euler2dcm_v000(att);
-        ang = x(10:12);
-        
+    predict(kalman, imu);
+    x = correct(kalman, lidar);
 
-        % Calculate position error
-        pos_err=pos-true_val(2:4);
-        
-        % Calculate attitude error
-        att_err = att-true_val(8:10);
-        
-        % Calculate LIDAR error
-        lidar_err = CalcRayDistances(pos, Cbn * diag([1 1 -1]), rays, DTM, cellsize)'-lidar;
-        lidar_err_mean = mean(lidar_err(~isnan(lidar_err)));
-        lidar_err_num_valid = sum(~isnan(lidar_err));
-        
-        % Write recovered results and errors
-        fwrite(F_ERR,[pr_count;pos_err;att_err;lidar_err_mean;lidar_err_num_valid;-1;-1],'double');
-        fwrite(F_RES,[pr_count;pos; att; Cbn'*vel_n],'double');
-        
-        if any(abs(pos_err)>50)
-            success = false;
-            break;
-        end
+    pos = x(1:3)+pos_init;
+    vel = x(4:6);
+    att = x(7:9);
+    Cbn = euler2dcm_v000(att);
 
-        if sim_len == 1
-            success = true;
-            break;
-        elseif sim_len > 0
-            sim_len = sim_len - 1;
-        end
-        
-        % Read next records
-        imu_data=fread(F_IMU,7,'double');
-        true_val = fread(F_TRU, 10, 'double');
-        lidar_data=fread(F_LIDAR,1+n_rays,'double');
+
+    % Calculate position error
+    pos_err=pos-true_val(2:4);
+
+    % Calculate attitude error
+    att_err = att-true_val(8:10);
+
+    % Calculate LIDAR error
+    lidar_err = CalcRayDistances(pos, Cbn * diag([1 1 -1]), rays, DTM, cellsize)'-lidar;
+    lidar_err_mean = mean(lidar_err(~isnan(lidar_err)));
+    lidar_err_num_valid = sum(~isnan(lidar_err));
+
+    % Write recovered results and errors
+    fwrite(F_ERR,[pr_count;pos_err;att_err;lidar_err_mean;lidar_err_num_valid;-1;-1],'double');
+    fwrite(F_RES,[pr_count;pos; att; Cbn'*vel_n],'double');
+
+    % Write private data
+    fwrite(F_PRV,[x(:); diag(kalman.StateCovariance)],'double');
+
+    if any(abs(pos_err)>50)
+        success = false;
+        break;
+    end
+
+    if sim_len == 1
+        success = true;
+        break;
+    elseif sim_len > 0
+        sim_len = sim_len - 1;
+    end
+
+    % Read next records
+    imu_data=fread(F_IMU,7,'double');
+    true_val = fread(F_TRU, 10, 'double');
+    lidar_data=fread(F_LIDAR,1+n_rays,'double');
 end
 
 fclose(F_IMU);
@@ -122,6 +124,7 @@ fclose(F_LIDAR);
 fclose(F_TRU);
 fclose(F_RES);
 fclose(F_ERR);
+fclose(F_PRV);
 if show_only == 0
     return;
 end
@@ -132,23 +135,22 @@ end
 
 %%
 
-function [xf] = ins_nav(x, imu, g, dt)
-    [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(euler2dcm_v000(x(7:9)), x(4:6), x(1:3), imu(1:3) + x(13:15) + x(16:18)*dt, imu(4:6), g, dt, 0);
+function [xf] = ins_nav(x, imu, g, dt, pos_init)
+    [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(euler2dcm_v000(x(7:9)), x(4:6), x(1:3)+pos_init, imu(1:3) + x(10:12) + x(13:15)*dt, imu(4:6), g, dt, 0);
      xf = zeros(size(x));
      
-    xf(1:3) = pos; %position
+    xf(1:3) = pos-pos_init; %position
     xf(4:6) = vel_n; %velocity
     xf(7:9) = dcm2euler_v000(Cbn); %attitude
-    xf(10:12) = imu(4:6)*dt; %angular_velocity
-    xf(13:15) = x(13:15); %linear_bias
-    xf(16:18) = x(16:18); %linear_drift
+    xf(10:12) = x(10:12); %linear_bias
+    xf(13:15) = x(13:15); %linear_drift
 end
 
-function [rho] = kalman_ray_trace(x, rays, DTM, cellsize)
-    P = x(1:3);
+function [rho] = kalman_ray_trace(x, rays, DTM, cellsize, pos_init)
+    P = x(1:3) + pos_init;
     R = euler2dcm_v000(x(7:9)) * diag([1 1 -1]);
-    dP = x(13:15);
-    dXi = x(16:18);
+    dP = x(10:12);
+    dXi = x(13:15);
     
     [rho_c, P_L, R_dot_lambda] = CalcRayDistances(P, R, rays, DTM, cellsize);
     
