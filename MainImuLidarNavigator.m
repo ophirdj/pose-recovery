@@ -16,7 +16,7 @@ RES_FILENAME = 'res_imu_lidar.bin';
 PRV_FILENAME = 'prv_imu_lidar.bin';
     
 show_only = 0;
-sim_len = 3000;
+sim_len = 600;
 
 scenarios = {};
 scenario_names = {};

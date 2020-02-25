@@ -63,93 +63,93 @@ att_last = att;
 kalmanFilterImu = configureKalmanFilter('ConstantAcceleration',[pos; att; vel_n], [1 1 1]*1e-6, [1, 1, 1]*1e-1, 1e0);
 
 while (~feof(F_IMU))
-        pr_count=imu_data(1);
-        imu=imu_data(2:7);
-        lidar=lidar_data(2:end);
-        
-        fprintf('%d\n', pr_count);
-        
-        if pr_count < window_size
-            pos = true_val(2:4);
-            att = true_val(8:10);
-            Cbn = euler2dcm_v000(att);
-            vel_n = true_val(5:7);
+    pr_count=imu_data(1);
+    imu=imu_data(2:7);
+    lidar=lidar_data(2:end);
 
-            pos_window = [pos_window(:,2:end), pos];
-            Cbn_window = cat(3, Cbn_window(:,:,2:end), Cbn);
-            lidar_window = [lidar_window(:,2:end), lidar];
-            delta_pos_window = [delta_pos_window(:,2:end), pos - pos_window(:,end-1)];
-            delta_att_window = [delta_att_window(:,2:end), att - att_last];
-            att_last = att;
-            
-            predict(kalmanFilterImu);
-            v = correct(kalmanFilterImu, [pos; att; vel_n]);
-            pos = v(1:3)';
-            att = v(4:6)';
-            vel_n = v(7:9)';
-        else
-            [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(Cbn, vel_n, pos, imu(1:3), imu(4:6), g, dt, 0);
-            att = dcm2euler_v000(Cbn);
+    fprintf('%d\n', pr_count);
 
-            predict(kalmanFilterImu);
-            v = correct(kalmanFilterImu, [pos; att; vel_n]);
-            pos = v(1:3)';
-            att = v(4:6)';
-            vel_n = v(7:9)';
+    if pr_count < window_size
+        pos = true_val(2:4);
+        att = true_val(8:10);
+        Cbn = euler2dcm_v000(att);
+        vel_n = true_val(5:7);
 
-            pos_window = [pos_window(:,2:end), pos];
-            Cbn_window = cat(3, Cbn_window(:,:,2:end), Cbn);
-            lidar_window = [lidar_window(:,2:end), lidar];
-            delta_pos_window = [delta_pos_window(:,2:end), pos - pos_window(:,end-1)];
-            delta_att_window = [delta_att_window(:,2:end), att - att_last];
+        pos_window = [pos_window(:,2:end), pos];
+        Cbn_window = cat(3, Cbn_window(:,:,2:end), Cbn);
+        lidar_window = [lidar_window(:,2:end), lidar];
+        delta_pos_window = [delta_pos_window(:,2:end), pos - pos_window(:,end-1)];
+        delta_att_window = [delta_att_window(:,2:end), att - att_last];
+        att_last = att;
 
-            [pos_window2, Cbn_window2] = strapdown_lidar(pos_window, Cbn_window, ...
-                delta_pos_window, delta_att_window, ...
-                rays, lidar_window, DTM, cellsize, vel_n .* dt);
-            
-            pos = pos_window2(:,end);
-            Cbn = Cbn_window2(:,:,end);
-            att = dcm2euler_v000(Cbn);
-            
-            pos_window(:,end) = pos;
-            Cbn_window(:,:,end) = Cbn;
-            
-            att_last = att;
-            
-            correct(kalmanFilterImu, [pos; att; vel_n]);
-        end
-        
-        % Calculate position error
-        pos_err=pos-true_val(2:4);
-        
-        % Calculate attitude error
-        att_err = att-true_val(8:10);
-        
-        % Calculate LIDAR error
-        lidar_err = CalcRayDistances(pos, Cbn * diag([1 1 -1]), rays, DTM, cellsize)'-lidar;
-        lidar_err_mean = mean(lidar_err(~isnan(lidar_err)));
-        lidar_err_num_valid = sum(~isnan(lidar_err));
-        
-        % Write recovered results and errors
-        fwrite(F_ERR,[pr_count;pos_err;att_err;lidar_err_mean;lidar_err_num_valid;-1;-1],'double');
-        fwrite(F_RES,[pr_count;pos; att; Cbn'*vel_n],'double');
-        
-        if any(abs(pos_err)>50)
-            success = false;
-            break;
-        end
+        predict(kalmanFilterImu);
+        v = correct(kalmanFilterImu, [pos; att; vel_n]);
+        pos = v(1:3)';
+        att = v(4:6)';
+        vel_n = v(7:9)';
+    else
+        [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(Cbn, vel_n, pos, imu(1:3), imu(4:6), g, dt, 0);
+        att = dcm2euler_v000(Cbn);
 
-        if sim_len == 1
-            success = true;
-            break;
-        elseif sim_len > 0
-            sim_len = sim_len - 1;
-        end
-        
-        % Read next records
-        imu_data=fread(F_IMU,7,'double');
-        true_val = fread(F_TRU, 10, 'double');
-        lidar_data=fread(F_LIDAR,1+n_rays,'double');
+        predict(kalmanFilterImu);
+        v = correct(kalmanFilterImu, [pos; att; vel_n]);
+        pos = v(1:3)';
+        att = v(4:6)';
+        vel_n = v(7:9)';
+
+        pos_window = [pos_window(:,2:end), pos];
+        Cbn_window = cat(3, Cbn_window(:,:,2:end), Cbn);
+        lidar_window = [lidar_window(:,2:end), lidar];
+        delta_pos_window = [delta_pos_window(:,2:end), pos - pos_window(:,end-1)];
+        delta_att_window = [delta_att_window(:,2:end), att - att_last];
+
+        [pos_window2, Cbn_window2] = strapdown_lidar(pos_window, Cbn_window, ...
+            delta_pos_window, delta_att_window, ...
+            rays, lidar_window, DTM, cellsize, vel_n .* dt);
+
+        pos = pos_window2(:,end);
+        Cbn = Cbn_window2(:,:,end);
+        att = dcm2euler_v000(Cbn);
+
+        pos_window(:,end) = pos;
+        Cbn_window(:,:,end) = Cbn;
+
+        att_last = att;
+
+        correct(kalmanFilterImu, [pos; att; vel_n]);
+    end
+
+    % Calculate position error
+    pos_err=pos-true_val(2:4);
+
+    % Calculate attitude error
+    att_err = mod(att-true_val(8:10)+pi,2*pi)-pi;
+
+    % Calculate LIDAR error
+    lidar_err = CalcRayDistances(pos, Cbn * diag([1 1 -1]), rays, DTM, cellsize)'-lidar;
+    lidar_err_mean = mean(lidar_err(~isnan(lidar_err)));
+    lidar_err_num_valid = sum(~isnan(lidar_err));
+
+    % Write recovered results and errors
+    fwrite(F_ERR,[pr_count;pos_err;att_err;lidar_err_mean;lidar_err_num_valid;-1;-1],'double');
+    fwrite(F_RES,[pr_count;pos; att; Cbn'*vel_n],'double');
+
+    if any(abs(pos_err)>50)
+        success = false;
+        break;
+    end
+
+    if sim_len == 1
+        success = true;
+        break;
+    elseif sim_len > 0
+        sim_len = sim_len - 1;
+    end
+
+    % Read next records
+    imu_data=fread(F_IMU,7,'double');
+    true_val = fread(F_TRU, 10, 'double');
+    lidar_data=fread(F_LIDAR,1+n_rays,'double');
 end
 
 fclose(F_IMU);

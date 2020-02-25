@@ -5,7 +5,7 @@ prv=readbin_v000(out_prv,30);
 
 x=prv(1:15,:);
 cov=prv(16:30,:);
-corr=cov./repmat(std(cov,1,2).^2,[1 size(cov,2)]);
+corr=cov./repmat(std(cov,1,1).^2,[size(cov,1) 1]);
 
 figure;
 title('Linear Bias Over Time');
@@ -17,13 +17,13 @@ plot(x(10:12,:)');
 legend('X', 'Y', 'Z');
 
 figure;
-title('Linear Drift Over Time');
+title('Angular Bias Over Time');
 xlabel('Frame Number');
-ylabel('Linear Drift (m/s)');
+ylabel('Angular Bias (mrad)');
 hold on;
 grid;
-plot(x(13:15,:)');
-legend('X', 'Y', 'Z');
+plot(x(13:15,:)' * 1e3);
+legend('yaw', 'pitch', 'roll');
 
 
 figure;
@@ -67,7 +67,7 @@ legend('X', 'Y', 'Z');
 
 
 figure;
-title('Covariance (Linear Drift)');
+title('Covariance (Angular Bias)');
 xlabel('Frame Number');
 ylabel('Covariance');
 hold on;
@@ -116,7 +116,7 @@ legend('X', 'Y', 'Z');
 
 
 figure;
-title('Correlation (Linear Drift)');
+title('Correlation (Angular Bias)');
 xlabel('Frame Number');
 ylabel('Correlation');
 hold on;

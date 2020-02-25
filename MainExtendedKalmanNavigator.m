@@ -16,7 +16,7 @@ RES_FILENAME = 'res_extended.bin';
 PRV_FILENAME = 'prv_extended.bin';
 
 show_only = 0;
-sim_len = 1000;
+sim_len = 600;
 
 scenarios = {};
 scenario_names = {};

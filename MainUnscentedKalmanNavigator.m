@@ -16,12 +16,14 @@ RES_FILENAME = 'res_unscented.bin';
 PRV_FILENAME = 'prv_unscented.bin';
 
 show_only = 0;
-sim_len = 3000;
+sim_len = 600;
 
 scenarios = {};
 scenario_names = {};
 logs = {};
 ls = {};
+
+window = 0;
 
 for k = 1:length(PATHS)
     PATH = PATHS{k};

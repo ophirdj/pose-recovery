@@ -60,42 +60,42 @@ while (~feof(F_IMU))
 
     fprintf('%d\n', pr_count);
 
-        [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(Cbn, vel_n, pos, imu(1:3), imu(4:6), g, dt, 0);
-        
-        att = dcm2euler_v000(Cbn);
-        
+    [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(Cbn, vel_n, pos, imu(1:3), imu(4:6), g, dt, 0);
 
-        % Calculate position error
-        pos_err=pos-true_val(2:4);
-        
-        % Calculate attitude error
-        att_err = att-true_val(8:10);
-        
-        % Calculate LIDAR error
-        lidar_err = CalcRayDistances(pos, Cbn * diag([1 1 -1]), rays, DTM, cellsize)'-lidar;
-        lidar_err_mean = mean(lidar_err(~isnan(lidar_err)));
-        lidar_err_num_valid = sum(~isnan(lidar_err));
-        
-        % Write recovered results and errors
-        fwrite(F_ERR,[pr_count;pos_err;att_err;lidar_err_mean;lidar_err_num_valid;-1;-1],'double');
-        fwrite(F_RES,[pr_count;pos; att; Cbn'*vel_n],'double');
-        
-        if any(abs(pos_err)>50)
-            success = false;
-            break;
-        end
+    att = dcm2euler_v000(Cbn);
 
-        if sim_len == 1
-            success = true;
-            break;
-        elseif sim_len > 0
-            sim_len = sim_len - 1;
-        end
-        
-        % Read next records
-        imu_data=fread(F_IMU,7,'double');
-        true_val = fread(F_TRU, 10, 'double');
-        lidar_data=fread(F_LIDAR,1+n_rays,'double');
+
+    % Calculate position error
+    pos_err=pos-true_val(2:4);
+
+    % Calculate attitude error
+    att_err = mod(att-true_val(8:10)+pi,2*pi)-pi;
+
+    % Calculate LIDAR error
+    lidar_err = CalcRayDistances(pos, Cbn * diag([1 1 -1]), rays, DTM, cellsize)'-lidar;
+    lidar_err_mean = mean(lidar_err(~isnan(lidar_err)));
+    lidar_err_num_valid = sum(~isnan(lidar_err));
+
+    % Write recovered results and errors
+    fwrite(F_ERR,[pr_count;pos_err;att_err;lidar_err_mean;lidar_err_num_valid;-1;-1],'double');
+    fwrite(F_RES,[pr_count;pos; att; Cbn'*vel_n],'double');
+
+    if any(abs(pos_err)>50)
+        success = false;
+        break;
+    end
+
+    if sim_len == 1
+        success = true;
+        break;
+    elseif sim_len > 0
+        sim_len = sim_len - 1;
+    end
+
+    % Read next records
+    imu_data=fread(F_IMU,7,'double');
+    true_val = fread(F_TRU, 10, 'double');
+    lidar_data=fread(F_LIDAR,1+n_rays,'double');
 end
 
 fclose(F_IMU);

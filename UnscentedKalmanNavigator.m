@@ -57,7 +57,7 @@ rays = GenerateRays(span_angle / ((n_rays-1)/2), ((n_rays-1)/2));
 
 % Kalman filter initialization
 
-% x = [position velocity attitude linear_bias linear_drift]
+% x = [position velocity attitude linear_bias angular_bias]
 x = [0 0 0 vel_n' att' 0 0 0 0 0 0]';
 
 f = @(x,u)(ins_nav(x, u, g, dt, pos_init));
@@ -65,7 +65,7 @@ h = @(x)(kalman_ray_trace(x, rays, DTM, cellsize, pos_init));
 
 kalman = unscentedKalmanFilter(f,h,x);
 
-kalman.Alpha = 0.005;
+kalman.Alpha = 0.003;
 
 while (~feof(F_IMU))
     pr_count=imu_data(1);
@@ -74,8 +74,15 @@ while (~feof(F_IMU))
 
     fprintf('%d\n', pr_count);
         
-    predict(kalman, imu);
-    x = correct(kalman, lidar);
+    data.IMU = imu;
+    data.tru = true_val;
+    
+    x = predict(kalman, data);
+    try
+        x = correct(kalman, lidar);
+    catch
+        % Skip corrction
+    end
 
     pos = x(1:3)+pos_init;
     vel = x(4:6);
@@ -87,7 +94,7 @@ while (~feof(F_IMU))
     pos_err=pos-true_val(2:4);
 
     % Calculate attitude error
-    att_err = att-true_val(8:10);
+    att_err = mod(att-true_val(8:10)+pi,2*pi)-pi;
 
     % Calculate LIDAR error
     lidar_err = CalcRayDistances(pos, Cbn * diag([1 1 -1]), rays, DTM, cellsize)'-lidar;
@@ -112,7 +119,7 @@ while (~feof(F_IMU))
     elseif sim_len > 0
         sim_len = sim_len - 1;
     end
-
+    
     % Read next records
     imu_data=fread(F_IMU,7,'double');
     true_val = fread(F_TRU, 10, 'double');
@@ -135,32 +142,28 @@ end
 
 %%
 
-function [xf] = ins_nav(x, imu, g, dt, pos_init)
-    [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(euler2dcm_v000(x(7:9)), x(4:6), x(1:3)+pos_init, imu(1:3) + x(10:12) + x(13:15)*dt, imu(4:6), g, dt, 0);
+function [xf] = ins_nav(x, data, g, dt, pos_init)
+    imu = data.IMU;
+    tru = data.tru;
+    
+    [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(euler2dcm_v000(x(7:9)), x(4:6), x(1:3)+pos_init, imu(1:3) - x(10:12), imu(4:6) - x(13:15)*1e-3, g, dt, 0);
      xf = zeros(size(x));
      
     xf(1:3) = pos-pos_init; %position
     xf(4:6) = vel_n; %velocity
     xf(7:9) = dcm2euler_v000(Cbn); %attitude
     xf(10:12) = x(10:12); %linear_bias
-    xf(13:15) = x(13:15); %linear_drift
-end
+    xf(13:15) = x(13:15); %angular_bias
 
+%     xf(1:3) = tru(2:4)-pos_init; %position
+%     xf(4:6) = tru(5:7); %velocity
+%     xf(7:9) = tru(8:10); %attitude
+%     xf(10:12) = x(10:12); %linear_bias
+%     xf(13:15) = x(13:15); %angular_bias
+end
 function [rho] = kalman_ray_trace(x, rays, DTM, cellsize, pos_init)
     P = x(1:3) + pos_init;
     R = euler2dcm_v000(x(7:9)) * diag([1 1 -1]);
-    dP = x(10:12);
-    dXi = x(13:15);
     
-    [rho_c, P_L, R_dot_lambda] = CalcRayDistances(P, R, rays, DTM, cellsize);
-    
-    N = GetSurfaceNormal(P_L(1,:), P_L(2,:), DTM, cellsize);
-    
-    rho = zeros(size(rho_c));
-    
-    for n = 1:length(rho)
-        rho(n) = rho_c(n) + N(:,n)' / (N(:,n)' * R_dot_lambda(:,n)) * (dP - rho_c(n) * Wedge(R_dot_lambda) * dXi);
-    end
-    
-%     rho = rho_c + (N ./ repmat(dot(N,R_dot_lambda), [3 1])) * (repmat(dP, [1 size(rays, 2)]) - rho_c * Wedge(R_dot_lambda) * dXi);
+    rho = CalcRayDistances(P, R, rays, DTM, cellsize);
 end
