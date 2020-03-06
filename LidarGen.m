@@ -23,7 +23,7 @@ while (~feof(F_TRU))
     pos = true_val(2:4);
     att = true_val(8:10);
     % Look down
-    Cbn = euler2dcm_v000(att) * diag([1 1 -1]);
+    Cbn = [0 1 0; 1 0 0; 0 0 -1] * euler2dcm_v000(att);
     
     distances = CalcRayDistances(pos, Cbn, rays, DTM, cellsize);
     

@@ -7,8 +7,9 @@ PATHS = {...
 %         'C:\Users\Ophir\matlab_workspace\trajectories\Path_1_100_20\',...
 %         'C:\Users\Ophir\matlab_workspace\trajectories\Path_2_100_20\',...
 %         'C:\Users\Ophir\matlab_workspace\trajectories\Circle_100_20\',...
-        'C:\Users\Ophir\matlab_workspace\trajectories\Circle_10_5\',...
+%         'C:\Users\Ophir\matlab_workspace\trajectories\Circle_10_5\',...
 %         'C:\Users\Ophir\matlab_workspace\trajectories\Curve_100_20\',...
+        'C:\Users\Ophir\matlab_workspace\trajectories\Line_100_1\',...
         };
     
 ERR_FILENAME = 'err_unscented.bin';
@@ -16,7 +17,7 @@ RES_FILENAME = 'res_unscented.bin';
 PRV_FILENAME = 'prv_unscented.bin';
 
 show_only = 0;
-sim_len = 600;
+sim_len = 1000;
 
 scenarios = {};
 scenario_names = {};
@@ -37,6 +38,19 @@ for k = 1:length(PATHS)
     UnscentedKalmanNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
         [PATH 'meta.bin'], [PATH RES_FILENAME], [PATH ERR_FILENAME], [PATH PRV_FILENAME], ...
         window, DTM, sim_len, show_only);
+
+%     % IMU
+%     for linear_err = [1e-2]
+%         for angular_err = [0]
+%             scenario_names{end+1} = sprintf('%s %.0d %.0d', 'IMU', linear_err, angular_err);
+%             logs{end+1} = F_LOG;
+%             dir = [PATH sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
+%             scenarios{end+1} = @()...
+%             UnscentedKalmanNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
+%                 [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...,
+%                 window, DTM, sim_len, show_only);
+%         end
+%     end
     
 %     % IMU
 %     for linear_err = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0]

@@ -50,7 +50,12 @@ Cbn = euler2dcm_v000(att);
 lidar = lidar_data(2:end);
 
 % LIDAR  model
-rays = GenerateRays(span_angle / ((n_rays-1)/2), ((n_rays-1)/2));
+if n_rays == 1
+    alpha = 0;
+else
+    alpha = span_angle / ((n_rays-1)/2);
+end
+rays = GenerateRays(alpha, (n_rays-1)/2);
 
 
 while (~feof(F_IMU))
@@ -60,9 +65,7 @@ while (~feof(F_IMU))
 
     fprintf('%d\n', pr_count);
 
-    [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(Cbn, vel_n, pos, imu(1:3), imu(4:6), g, dt, 0);
 
-    att = dcm2euler_v000(Cbn);
 
 
     % Calculate position error
@@ -72,13 +75,17 @@ while (~feof(F_IMU))
     att_err = mod(att-true_val(8:10)+pi,2*pi)-pi;
 
     % Calculate LIDAR error
-    lidar_err = CalcRayDistances(pos, Cbn * diag([1 1 -1]), rays, DTM, cellsize)'-lidar;
+    lidar_err = CalcRayDistances(pos, [0 1 0; 1 0 0; 0 0 -1] * Cbn, rays, DTM, cellsize)'-lidar;
     lidar_err_mean = mean(lidar_err(~isnan(lidar_err)));
     lidar_err_num_valid = sum(~isnan(lidar_err));
 
     % Write recovered results and errors
     fwrite(F_ERR,[pr_count;pos_err;att_err;lidar_err_mean;lidar_err_num_valid;-1;-1],'double');
     fwrite(F_RES,[pr_count;pos; att; Cbn'*vel_n],'double');
+    
+    [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(Cbn, vel_n, pos, imu(1:3), imu(4:6), g, dt, 0);
+
+    att = dcm2euler_v000(Cbn);
 
     if any(abs(pos_err)>50)
         success = false;

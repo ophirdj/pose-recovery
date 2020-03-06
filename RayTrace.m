@@ -17,7 +17,7 @@ if nargin < 6 || lambda <= 0
 end
 
 if nargin < 5 || epsilon <= 0
-    epsilon = 1e-3;
+    epsilon = 1e-6;
 end
 
 % normalize ray;

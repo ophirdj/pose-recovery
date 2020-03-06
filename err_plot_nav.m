@@ -15,7 +15,7 @@ contour(X, Y, DTM);
 hold on;
 plot(res(2,:), res(3,:), 'bo');
 % figure;
-plot(tru(2,1:size(res, 2)),tru(3,1:size(res, 2)),'r.');
+plot(tru(2,2:size(res, 2)+1),tru(3,2:size(res, 2)+1),'r.');
 grid;
 pbaspect([1 1 1]);
 daspect([1 1 1]);

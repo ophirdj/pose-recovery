@@ -72,22 +72,6 @@ while (~feof(F_IMU))
 
     fprintf('%d\n', pr_count);
     
-    data.IMU = imu;
-    data.tru = true_val;
-    
-    x = predict(kalman, data);
-    try
-        x = correct(kalman, lidar);
-    catch
-        % Skip corrction
-    end
-
-    pos = x(1:3)+pos_init;
-    vel = x(4:6);
-    att = x(7:9);
-    Cbn = euler2dcm_v000(att);
-
-
     % Calculate position error
     pos_err=pos-true_val(2:4);
 
@@ -105,6 +89,29 @@ while (~feof(F_IMU))
 
     % Write private data
     fwrite(F_PRV,[x(:); diag(kalman.StateCovariance)],'double');
+    
+    
+    
+    data.IMU = imu;
+    data.tru = true_val;
+    
+    x = predict(kalman, data);
+    
+    % Effective LIDAR rate is 1/10th of IMU.
+    % IMU = 100Hz => LIDAR = 10Hz;
+    if(mod(pr_count, 10)==0)
+        try
+            x = correct(kalman, lidar);
+        catch
+            % Skip correction
+        end
+    end
+
+    pos = x(1:3)+pos_init;
+    vel = x(4:6);
+    att = x(7:9);
+    Cbn = euler2dcm_v000(att);
+
 
     if any(abs(pos_err)>50)
         success = false;
