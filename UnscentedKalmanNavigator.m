@@ -69,7 +69,10 @@ h = @(x)(kalman_ray_trace(x, rays, DTM, cellsize));
 
 kalman = unscentedKalmanFilter(f,h,x);
 
-kalman.Alpha = 0.004;
+kalman.Alpha = 0.1;
+
+kalman.ProcessNoise = 0;
+kalman.MeasurementNoise = 0;
 
 while (~feof(F_IMU))
     pr_count=imu_data(1);
@@ -96,24 +99,20 @@ while (~feof(F_IMU))
     % Write private data
     fwrite(F_PRV,[x(:); diag(kalman.StateCovariance)],'double');
     
-    
-        
-    data.IMU = imu;
-    data.tru = true_val;
-    
-%     bias = x(10:15);
-    x = predict(kalman, data);
-%     x(10:15) = bias;
-    
     try
         % Effective LIDAR rate is 1/10th of IMU.
         % IMU = 100Hz => LIDAR = 10Hz;
         if(mod(pr_count, 10)==0)
-            x = correct(kalman, lidar);
+            correct(kalman, lidar);
         end
     catch
         % Skip correction
     end
+        
+    data.IMU = imu;
+    data.tru = true_val;
+    
+    x = predict(kalman, data);
 
     pos = x(1:3);
     vel_n = x(4:6);
@@ -150,6 +149,7 @@ end
 end
 %% Show results
 err_plot_nav(out_err,out_res,in_mnav,DTM,cellsize,success);
+kalman_plot(out_prv);
 end
 
 %%
@@ -158,14 +158,14 @@ function [xf] = ins_nav(x, data, g, dt)
     imu = data.IMU;
     tru = data.tru;
     
-    [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(euler2dcm_v000(x(7:9)), x(4:6), x(1:3), imu(1:3) - x(10:12)*1e-3, imu(4:6) - x(13:15)*1e-3, g, dt, 0);
+    [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(euler2dcm_v000(x(7:9)), x(4:6), x(1:3), imu(1:3) - x(10:12), imu(4:6) - x(13:15), 0, dt, 0);
     xf = zeros(size(x));
      
     xf(1:3) = pos; %position
     xf(4:6) = vel_n; %velocity
     xf(7:9) = dcm2euler_v000(Cbn); %attitude
-    xf(10:12) = x(10:12); %linear_bias
-    xf(13:15) = x(13:15); %angular_bias
+    xf(10:12) = 0.9 * x(10:12); %linear_bias
+    xf(13:15) = 0.9 * x(13:15); %angular_bias
 
 %     xf(1:3) = tru(2:4); %position
 %     xf(4:6) = tru(5:7); %velocity
