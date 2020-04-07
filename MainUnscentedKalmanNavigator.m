@@ -16,8 +16,8 @@ ERR_FILENAME = 'err_unscented.bin';
 RES_FILENAME = 'res_unscented.bin';
 PRV_FILENAME = 'prv_unscented.bin';
 
-show_only = 0;
-sim_len = 1000;
+show_only = 2;
+sim_len = 6000;
 
 scenarios = {};
 scenario_names = {};
@@ -98,7 +98,7 @@ for j = 1:length(scenarios)
         else
             fprintf('%s FAIL\n', scenario_names{j});
         end
-        close all;
+%         close all;
     catch e
         fprintf(logs{j}, '%s\n%s\n', scenario_names{j}, getReport(e));
         fprintf('%s\n%s\n', scenario_names{j}, getReport(e));

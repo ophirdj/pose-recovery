@@ -1,5 +1,5 @@
-function success = UnscentedKalmanNavigator( in_mnav, in_mimu, in_mlidar, ...
-    in_meta, out_res, out_err, out_prv, window_size, DTM, sim_len, show_only )
+function [success, steps] = UnscentedKalmanNavigator( in_mnav, in_mimu, in_mlidar, ...
+    in_meta, out_res, out_err, out_prv, window_size, DTM, sim_len, show_only, ka )
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
 if nargin < 10
@@ -69,15 +69,18 @@ h = @(x)(kalman_ray_trace(x, rays, DTM, cellsize));
 
 kalman = unscentedKalmanFilter(f,h,x);
 
-kalman.Alpha = 0.1;
+kalman.Alpha = 0.117;
 
-kalman.ProcessNoise = 0;
+% load('ukf-cov.mat', 'covariance')
+kalman.ProcessNoise = 1e-8;
 kalman.MeasurementNoise = 0;
 
 while (~feof(F_IMU))
     pr_count=imu_data(1);
     imu=imu_data(2:7);
     lidar=lidar_data(2:end);
+    
+    steps = pr_count-1;
 
     fprintf('%d\n', pr_count);
     
@@ -88,7 +91,8 @@ while (~feof(F_IMU))
     att_err = mod(att-true_val(8:10)+pi,2*pi)-pi;
 
     % Calculate LIDAR error
-    lidar_err = CalcRayDistances(pos, [0 1 0; 1 0 0; 0 0 -1] * Cbn, rays, DTM, cellsize)'-lidar;
+    lidar_projected = CalcRayDistances(pos, [0 1 0; 1 0 0; 0 0 -1] * Cbn, rays, DTM, cellsize)';
+    lidar_err = lidar_projected-lidar;
     lidar_err_mean = mean(lidar_err(~isnan(lidar_err)));
     lidar_err_num_valid = sum(~isnan(lidar_err));
 
@@ -104,6 +108,8 @@ while (~feof(F_IMU))
         % IMU = 100Hz => LIDAR = 10Hz;
         if(mod(pr_count, 10)==0)
             correct(kalman, lidar);
+        else
+%             correct(kalman, lidar_projected);
         end
     catch
         % Skip correction
@@ -112,6 +118,10 @@ while (~feof(F_IMU))
     data.IMU = imu;
     data.tru = true_val;
     
+    if pr_count==119
+        fprintf('hi\n');
+    end
+    
     x = predict(kalman, data);
 
     pos = x(1:3);
@@ -119,7 +129,7 @@ while (~feof(F_IMU))
     att = x(7:9);
     Cbn = euler2dcm_v000(att);
 
-    if any(abs(pos_err)>50)
+    if any(abs(pos_err)>10)
         success = false;
         break;
     end
@@ -158,7 +168,7 @@ function [xf] = ins_nav(x, data, g, dt)
     imu = data.IMU;
     tru = data.tru;
     
-    [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(euler2dcm_v000(x(7:9)), x(4:6), x(1:3), imu(1:3) - x(10:12), imu(4:6) - x(13:15), 0, dt, 0);
+    [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(euler2dcm_v000(x(7:9)), x(4:6), x(1:3), imu(1:3) - x(10:12), imu(4:6) - x(13:15), g, dt, 0);
     xf = zeros(size(x));
      
     xf(1:3) = pos; %position

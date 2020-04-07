@@ -117,10 +117,10 @@ dtm_load();
 
 %% Line_100_1
 freq_Hz = 100;
-n_rays = 0;
-span_angle = pi/4;
+n_rays = 1;
+span_angle = pi/6;
 ini_pos = [4500 4500 1500]';
-ini_vel = [100 0 0]';
+ini_vel = [10 0 0]';
 mot_def = repmat([3 0 0 0 0 1], [6000 1]);
 PATH = [dir 'Line_100_1\'];
 if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize, ini_vel)
