@@ -1,20 +1,20 @@
 function success = SimpleNavigator( in_mnav, in_mimu, in_mlidar, ...
-    in_meta, out_res, out_err, out_prv, window_size, DTM, sim_len, show_only )
+    in_meta, out_res, out_err, DTM, sim_len, show_only )
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
-if nargin < 10
+if nargin < 8
     sim_len = 0;
 end
-if nargin < 11
+if nargin < 9
     show_only = 0;
 end
 
 F_META = fopen(in_meta, 'rb');
 freq_Hz = fread(F_META, 1, 'double');
 dt = 1/freq_Hz;
-n_rays = fread(F_META, 1, 'double');
-span_angle = fread(F_META, 1, 'double');
 cellsize = fread(F_META, 1, 'double');
+n_rays = fread(F_META, 1, 'double');
+ray_angles = fread(F_META, n_rays, 'double');
 fclose(F_META);
 
 success = true;
@@ -33,12 +33,12 @@ F_ERR=fopen(out_err,'wb');
 %%read the input data from the files
 imu_data=fread(F_IMU,7,'double');
 true_val = fread(F_TRU, 10, 'double');
-lidar_data=fread(F_LIDAR,1+n_rays,'double');
+lidar_data=fread(F_LIDAR,2,'double');
 
 % skip first record (wierd bug - record is not correct)
 imu_data=fread(F_IMU,7,'double');
 true_val = fread(F_TRU, 10, 'double');
-lidar_data=fread(F_LIDAR,1+n_rays,'double');
+lidar_data=fread(F_LIDAR,2,'double');
 
 
 % Assume we know initial position, velocity, and orientation (read it from
@@ -50,12 +50,7 @@ Cbn = euler2dcm_v000(att);
 lidar = lidar_data(2:end);
 
 % LIDAR  model
-if n_rays == 1
-    alpha = 0;
-else
-    alpha = span_angle / ((n_rays-1)/2);
-end
-rays = GenerateRays(alpha, (n_rays-1)/2);
+rays = GenerateRays(ray_angles);
 
 
 while (~feof(F_IMU))
@@ -75,7 +70,9 @@ while (~feof(F_IMU))
     att_err = mod(att-true_val(8:10)+pi,2*pi)-pi;
 
     % Calculate LIDAR error
-    lidar_err = CalcRayDistances(pos, [0 1 0; 1 0 0; 0 0 -1] * Cbn, rays, DTM, cellsize)'-lidar;
+    lidar_projected = CalcRayDistances(pos, [0 1 0; 1 0 0; 0 0 -1] * Cbn, ...
+        rays(:,1+mod(pr_count,size(rays,2))), DTM, cellsize)';
+    lidar_err = lidar_projected-lidar;
     lidar_err_mean = mean(lidar_err(~isnan(lidar_err)));
     lidar_err_num_valid = sum(~isnan(lidar_err));
 
@@ -102,7 +99,7 @@ while (~feof(F_IMU))
     % Read next records
     imu_data=fread(F_IMU,7,'double');
     true_val = fread(F_TRU, 10, 'double');
-    lidar_data=fread(F_LIDAR,1+n_rays,'double');
+    lidar_data=fread(F_LIDAR,2,'double');
 end
 
 fclose(F_IMU);

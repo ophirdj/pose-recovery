@@ -1,16 +1,11 @@
-function [ rays ] = GenerateRays( alpha, n )
+function [ rays ] = GenerateRays( ray_angles )
 % GenLidarRays Generate a matrix where each column is a ray direction.
-% Rays are on the y-z plane in a symmetric span around [0 0 1].
-%   alpha   - angle between rays
-%   n       - Will generate 2n+1 rays
+% Rays are on the y-z plane with.
+%   ray_angles - Array specifying angles of rays relative to Y axis.
 
-if n < 0
-    rays = [];
-    return
-end
+angles = ray_angles(:)';
 
-angles = alpha * (-n:n);
-rays = [zeros(1, size(angles, 2)); ...
+rays = [zeros(1, length(angles)); ...
         sin(angles); ...
         cos(angles)];
 

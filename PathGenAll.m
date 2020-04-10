@@ -1,4 +1,4 @@
-function success = PathGenAll( dir_name, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize, vel )
+function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, DTM, cellsize, vel )
     %UNTITLED Summary of this function goes here
     %   Detailed explanation goes here
 
@@ -9,31 +9,31 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, n_rays, span_angle, f
     % Save metadata
     F_META = fopen([dir_name 'meta.bin'], 'wb');
     fwrite(F_META, freq_Hz, 'double');
-    fwrite(F_META, 2*n_rays+1, 'double');
-    fwrite(F_META, span_angle, 'double');
     fwrite(F_META, cellsize, 'double');
+    fwrite(F_META, length(ray_angles), 'double');
+    fwrite(F_META, ray_angles, 'double');
     fclose(F_META);
 
     gen_ground_truth(dir_name, mot_def, ini_pos, freq_Hz, vel);
-    success = LidarGen([dir_name 'mnav.bin'], [dir_name 'mlidar.bin'], n_rays, span_angle, DTM, cellsize);
+    success = LidarGen([dir_name 'mnav.bin'], [dir_name 'mlidar.bin'], ray_angles, DTM, cellsize);
 
-%     if ~success
-%         return
-%     end
-%     
-%     %IMU
-%     for linear_err = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0]
-%         for angular_err = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0]
-%             dir = [dir_name sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
-%             if ~isdir(dir)
-%                 mkdir(dir);
-%             elseif isdir(dir)
+    if ~success
+        return
+    end
+    
+    %IMU
+    for linear_err = [0 1e-16 1e-14 1e-12 1e-10 1e-8 1e-6 1e-4 1e-2 1e-1 1e0]
+        for angular_err = [0 1e-16 1e-14 1e-12 1e-10 1e-8 1e-6 1e-4 1e-2 1e-1 1e0]
+            dir = [dir_name sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
+            if ~isdir(dir)
+                mkdir(dir);
+            elseif isdir(dir)
 %                 continue;
-%             end
-%             gen_imu_err(dir_name, dir, linear_err, angular_err);
-%         end
-%     end
-% 
+            end
+            gen_imu_err_v000(dir_name, dir, linear_err, angular_err);
+        end
+    end
+
 %     %DTM
 %     for dtm_err = [0 1e-2 1e-1 1e0 2e0 5e0 1e1]
 %         dir = [dir_name sprintf('dtm_%.0d/', dtm_err)];
@@ -99,26 +99,41 @@ function [] = gen_ground_truth(dir_name, mot_def, ini_pos, freq_Hz, vel)
     fclose(F_MNAV);
 end
 
-function [] = gen_imu_err(nav_dir, dir_name, linear_err, angular_err)
+function [] = gen_imu_err_v000(nav_dir, dir_name, linear_err, angular_err)
+    F_MIMU = fopen([nav_dir 'mimu.bin'], 'rb');
+    F_EIMU = fopen([dir_name 'eimu.bin'], 'wb');
+    imu_data = fread(F_MIMU,7,'double');
+    while (~feof(F_MIMU))
+        pr_count = imu_data(1);
+        accelerometer = imu_data(2:4) + randn(3,1)*linear_err;
+        gyroscope = imu_data(5:7) + randn(3,1)*angular_err;
+        fwrite(F_EIMU, [pr_count;accelerometer(:);gyroscope(:)], 'double');
+        imu_data = fread(F_MIMU,7,'double');
+    end
+    fclose(F_MIMU);
+    fclose(F_EIMU);
+end
+
+function [] = gen_imu_err_v001(nav_dir, dir_name, linear_err, angular_err)
     %% Generate errornous IMU
     %%IMU error definitions (in continious time)
     %Accelerometers
-    SenErrDef(1).A=-5e-4;
-    SenErrDef(1).B=1e-3;
-    SenErrDef(1).C=1;
+    SenErrDef(1).A=0;...-5e-4;
+    SenErrDef(1).B=0;...1e-3;
+    SenErrDef(1).C=0;...1;
     SenErrDef(1).D=linear_err;...=5e-2;%error magnitude
-    SenErrDef(1).sP=1;
+    SenErrDef(1).sP=0;...1;
     SenErrDef(1).tparam=[];
 
     SenErrDef(2)=SenErrDef(1);
     SenErrDef(3)=SenErrDef(1);
 
     %Gyroscopes
-    SenErrDef(4).A=-0.0003;
-    SenErrDef(4).B=1e-5;
-    SenErrDef(4).C=1;
+    SenErrDef(4).A=0;...-0.0003;
+    SenErrDef(4).B=0;...1e-5;
+    SenErrDef(4).C=0;...1;
     SenErrDef(4).D=angular_err;...=1e-2;%error magnitude
-    SenErrDef(4).sP=1e-2;
+    SenErrDef(4).sP=0;...1e-2;
     SenErrDef(4).tparam=[]; 
     SenErrDef(5)=SenErrDef(4);
     SenErrDef(6)=SenErrDef(4);

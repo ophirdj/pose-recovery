@@ -117,13 +117,12 @@ dtm_load();
 
 %% Line_100_1
 freq_Hz = 100;
-n_rays = 1;
-span_angle = pi/6;
+ray_angles = -pi/6:pi/18:pi/6;
 ini_pos = [4500 4500 1500]';
 ini_vel = [10 0 0]';
-mot_def = repmat([3 0 0 0 0 1], [6000 1]);
+mot_def = repmat([3 0 0 0 0 1], [18000 1]);
 PATH = [dir 'Line_100_1\'];
-if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize, ini_vel)
+if ~PathGenAll(PATH, mot_def, ini_pos, ray_angles, freq_Hz, DTM, cellsize, ini_vel)
     fprintf('Error generating path\n');
 else
     fprintf('Done %s\n', 'Line_100_1\');

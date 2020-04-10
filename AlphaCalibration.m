@@ -3,16 +3,17 @@ RES_FILENAME = 'res_unscented.bin';
 PRV_FILENAME = 'prv_unscented.bin';
 
 show_only = 0;
-sim_len = 1000;
+sim_len = 2000;
 
 PATH = 'C:\Users\Ophir\matlab_workspace\trajectories\Line_100_1\';
 
-ka_max = 0;
+ka_max = 0.577;
 c_max = 0;
-for ka = 0.01:1e-3:1
+for ka = 7e-2:1e-2:1
     [s, c] = UnscentedKalmanNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
-            [PATH 'meta.bin'], [PATH RES_FILENAME], [PATH ERR_FILENAME], [PATH PRV_FILENAME], ...
-            window, DTM, sim_len, show_only, ka);
+        [PATH 'meta.bin'], [PATH RES_FILENAME], [PATH ERR_FILENAME], [PATH PRV_FILENAME], ...
+        DTM, 1e-8, 1e-6, ka, sim_len, show_only);
+
     if s
         k_max = ka;
         c_max = c;
