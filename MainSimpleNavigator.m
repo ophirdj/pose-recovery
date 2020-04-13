@@ -28,26 +28,26 @@ for k = 1:length(PATHS)
     F_LOG = fopen([PATH 'log.txt'],'w');
     ls{end+1} = F_LOG;
     
-%     % Ground Truth
-%     scenario_names{end+1} = 'Ground Truth';
-%     logs{end+1} = F_LOG;
-%     scenarios{end+1} = @()...
-%     SimpleNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
-%         [PATH 'meta.bin'], [PATH RES_FILENAME], [PATH ERR_FILENAME], ...
-%         DTM, sim_len, show_only);
+    % Ground Truth
+    scenario_names{end+1} = 'Ground Truth';
+    logs{end+1} = F_LOG;
+    scenarios{end+1} = @()...
+    SimpleNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
+        [PATH 'meta.bin'], [PATH RES_FILENAME], [PATH ERR_FILENAME], ...
+        DTM, sim_len, show_only);
 
-    % IMU
-    for linear_err = [1e-1]
-        for angular_err = [0]
-            scenario_names{end+1} = sprintf('%s %.0d %.0d', 'IMU', linear_err, angular_err);
-            logs{end+1} = F_LOG;
-            dir = [PATH sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
-            scenarios{end+1} = @()...
-            SimpleNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
-                [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], ...
-                DTM, sim_len, show_only);
-        end
-    end
+%     % IMU
+%     for linear_err = [1e-1]
+%         for angular_err = [0]
+%             scenario_names{end+1} = sprintf('%s %.0d %.0d', 'IMU', linear_err, angular_err);
+%             logs{end+1} = F_LOG;
+%             dir = [PATH sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
+%             scenarios{end+1} = @()...
+%             SimpleNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
+%                 [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], ...
+%                 DTM, sim_len, show_only);
+%         end
+%     end
 
 %     % IMU
 %     for linear_err = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0]
