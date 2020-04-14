@@ -118,7 +118,7 @@ dtm_load();
 %% Line_100_1
 freq_Hz = 100;
 ray_angles = -pi/6:pi/18:pi/6;
-ini_pos = [4500 4500 1500]';
+ini_pos = [4700 4700 1500]';
 ini_vel = [10 0 0]';
 mot_def = repmat([3 0 0 0 0 1], [18000 1]);
 PATH = [dir 'Line_100_1\'];

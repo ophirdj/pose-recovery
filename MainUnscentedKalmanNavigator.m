@@ -42,7 +42,7 @@ for k = 1:length(PATHS)
     scenarios{end+1} = @()...
     UnscentedKalmanNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
         [PATH 'meta.bin'], [PATH RES_FILENAME], [PATH ERR_FILENAME], [PATH PRV_FILENAME], ...
-        DTM, process_noise, 1e-2, 0.577, sim_len, show_only);
+        DTM, process_noise, 1e-2, 0.177, sim_len, show_only);
 
 %     % IMU
 %     for linear_err = [1e0]
@@ -53,7 +53,7 @@ for k = 1:length(PATHS)
 %             scenarios{end+1} = @()...
 %             UnscentedKalmanNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
 %                 [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...,
-%                 DTM, 1e-12, 1e-6, 0.577, sim_len, show_only);
+%                 DTM, 1e-4, 1e-6, 0.577, sim_len, show_only);
 %         end
 %     end
     

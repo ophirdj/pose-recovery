@@ -53,20 +53,19 @@ att = true_val(8:10);
 Cbn = euler2dcm_v000(att);
 lidar = lidar_data(2:end);
 
-bias_acc = [0 0 0]';
-bias_gyr = [0 0 0]';
-imu_tot = zeros(length(imu_data)-1,dt/dt_lidar);
-imu_tot(3,:) = -g;
+imu_tot = repmat([0 0 -g 0 0 0]', [1 dt/dt_lidar]);
+acc_bias = [0 0 0]';
+gyro_drift = [0 0 0]';
 
 % LIDAR  model
 rays = GenerateRays(ray_angles);
 
 
 % Kalman filter initialization
-x = [pos; vel_n; att; bias_acc; bias_gyr];
+x = zeros(15,1);
 
-f = @(x,u)(ins_nav(x, u, g, dt));
-h = @(x,pr_count)(kalman_ray_trace(x, rays, DTM, cellsize,pr_count));
+f = @(x,Phi)(Phi*x);
+h = @(x, pos, Cbn, pr_count)(kalman_ray_trace(x, pos, Cbn, pr_count, rays, DTM, cellsize));
 
 kalman = unscentedKalmanFilter(f,h,x);
 
@@ -75,7 +74,7 @@ kalman.ProcessNoise = process_noise * dt_lidar;
 kalman.MeasurementNoise = measurement_noise;
 
 kalman.StateCovariance = ...
-    diag([100 100 100                                               ... % pos
+    diag([1 1 1                                                     ... % pos
           1 1 1                                                     ... % vel
           (pi/180)^2 (pi/180)^2 (pi/180)^2                          ... % att
           1e-4 1e-4 1e-4                                            ... % bias-acc
@@ -112,40 +111,44 @@ while (~feof(F_IMU))
 
     % Write private data
     fwrite(F_PRV,[x(:); diag(kalman.StateCovariance)],'double');
-    
-    
-    % Effective LIDAR rate is dt/dt_lidar of IMU rate.
-    % IMU = 100Hz, LIDAR = 10Hz => m = 10
-    % If LIDAR is available, evaluate UKF.
+
     m = mod(pr_count, dt/dt_lidar);
     
-    try
-        if(m==0)
-            % LIDAR available
-            predict(kalman, imu_tot);
-            x = correct(kalman, lidar, pr_count);
-
-            pos = x(1:3)';
-            vel_n = x(4:6)';
-            att = x(7:9)';
-            Cbn = euler2dcm_v000(att);
-            bias_acc = x(10:12)';
-            bias_gyr = x(12:15)';
+    % Effective LIDAR rate is dt/dt_lidar of IMU rate.    
+    if(m == 0)
+        % LIDAR available
+        Phi_tot = eye(length(x));
+        
+        for j=1:size(imu_tot, 2)
+            Phi = eye(length(x));
+            Phi(1:3,4:6) = eye(3)*dt;
+            Phi(4:6,7:9) = skew(Cbn*(imu_tot(1:3, j)+[0 0 g]'));
+            Phi(4:6,10:12) = Cbn*dt;
+            Phi(7:9,13:15) = -Cbn*dt;
+            Phi_tot = Phi * Phi_tot;
         end
-    catch
-        % Skip correction
+    
+        x = predict(kalman, Phi_tot);
+%         if abs(kalman.MeasurementFcn(x, pos, Cbn, pr_count)-lidar) > 1e-3
+            x = correct(kalman, lidar, pos, Cbn, pr_count);
+%         end
+        
+        % Correct the navigation solution and reset the error state
+        pos = pos-x(1:3);
+        vel_n = vel_n-x(4:6);
+        Cbn = euler2dcm_v000(x(7:9)) * Cbn;
+        att = dcm2euler_v000(Cbn');
+        acc_bias = acc_bias + x(10:12);
+        gyro_drift = gyro_drift + x(13:15);
+        kalman.State = zeros(size(x));
     end
     
-    imu_tot(:, 1 + m) = imu;
+    imu_tot(:, 1+m) = imu;
     
     % IMU step
     [Cbn, vel_n, pos] = ...
-        strapdown_pln_dcm_v000(Cbn, vel_n, pos, ...
-                               imu(1:3) - bias_acc, ...
-                               imu(4:6) - bias_gyr, ...
-                               g, dt, 0);
-   att = dcm2euler_v000(Cbn);
-
+        strapdown_pln_dcm_v000(Cbn, vel_n, pos, imu(1:3)-acc_bias, imu(4:6)-gyro_drift, g, dt, 0);
+    
     if any(abs(pos_err)>30)
         success = false;
         break;
@@ -179,31 +182,11 @@ err_plot_nav(out_err,out_res,in_mnav,DTM,cellsize,success);
 kalman_plot(out_prv);
 end
 
-%%
-
-function [xf] = ins_nav(x, imu_tot, g, dt)
-    pos = x(1:3)';
-    vel_n = x(4:6)';
-    Cbn = euler2dcm_v000(x(7:9)');
-    bias_acc = x(10:12)';
-    bias_gyr = x(12:15)';
-    
-    for j=1:size(imu_tot, 2)
-        [Cbn, vel_n, pos] = ...
-            strapdown_pln_dcm_v000(Cbn, vel_n, pos, ...
-                                   imu_tot(1:3, j) - bias_acc, ...
-                                   imu_tot(4:6, j) - bias_gyr, ...
-                                   g, dt, 0);
-    end
-
-    att = dcm2euler_v000(Cbn);
-    xf = [pos vel_n att bias_acc bias_gyr]';
-end
-
-function [rho] = kalman_ray_trace(x, rays, DTM, cellsize, pr_count)
-    P = x(1:3);
-    R = [0 1 0; 1 0 0; 0 0 -1] * euler2dcm_v000(x(7:9));
-    ray = rays(:,1+mod(pr_count,size(rays,2)));
+%% Supporting functions
+function [rho] = kalman_ray_trace(x, pos, Cbn, pr_count, rays, DTM, cellsize)
+    P = pos - x(1:3);
+    R = [0 1 0; 1 0 0; 0 0 -1] * euler2dcm_v000(x(7:9)) * Cbn;
+    ray = rays(:,1 + mod(pr_count,size(rays,2)));
     
     rho = CalcRayDistances(P, R, ray, DTM, cellsize);
 end
