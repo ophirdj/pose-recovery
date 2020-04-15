@@ -128,19 +128,8 @@ while (~feof(F_IMU))
             Phi_tot = Phi * Phi_tot;
         end
     
-        x = predict(kalman, Phi_tot);
-%         if abs(kalman.MeasurementFcn(x, pos, Cbn, pr_count)-lidar) > 1e-3
-            x = correct(kalman, lidar, pos, Cbn, pr_count);
-%         end
-        
-        % Correct the navigation solution and reset the error state
-        pos = pos-x(1:3);
-        vel_n = vel_n-x(4:6);
-        Cbn = euler2dcm_v000(x(7:9)) * Cbn;
-        att = dcm2euler_v000(Cbn');
-        acc_bias = acc_bias + x(10:12);
-        gyro_drift = gyro_drift + x(13:15);
-        kalman.State = zeros(size(x));
+        predict(kalman, Phi_tot);
+        x = correct(kalman, lidar, pos, Cbn, pr_count);
     end
     
     imu_tot(:, 1+m) = imu;

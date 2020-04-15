@@ -11,7 +11,7 @@ rho=C./repmat(std(x,1,1).^2,[size(C,1) 1]);
 figure;
 title('Accelerometer Bias Over Time');
 xlabel('Frame Number');
-ylabel('Linear Bias (m/sec)');
+ylabel('Accelerometer Bias (m/sec)');
 hold on;
 grid;
 plot(x(10:12,:)');
@@ -20,7 +20,7 @@ legend('X', 'Y', 'Z');
 figure;
 title('Gyroscope Drift Over Time');
 xlabel('Frame Number');
-ylabel('Angular Bias (rad/sec)');
+ylabel('Gyroscope Drift (rad/sec)');
 hold on;
 grid;
 plot(x(13:15,:)');
@@ -30,7 +30,7 @@ legend('yaw', 'pitch', 'roll');
 figure;
 title('Square Root of Covariance (Position)');
 xlabel('Frame Number');
-ylabel('m/sec');
+ylabel('m');
 hold on;
 grid;
 plot(C_sqrt(1:3,:)');
@@ -40,7 +40,7 @@ legend('X', 'Y', 'Z');
 figure;
 title('Square Root of Covariance (Attitude)');
 xlabel('Frame Number');
-ylabel('rad/sec');
+ylabel('rad');
 hold on;
 grid;
 plot(C_sqrt(7:9,:)');
@@ -58,7 +58,7 @@ legend('X', 'Y', 'Z');
 
 
 figure;
-title('Square Root of Covariance (Linear Bias)');
+title('Square Root of Covariance (Accelerometer Bias)');
 xlabel('Frame Number');
 ylabel('m/sec');
 hold on;
@@ -68,7 +68,7 @@ legend('X', 'Y', 'Z');
 
 
 figure;
-title('Square Root of Covariance (Angular Bias)');
+title('Square Root of Covariance (Gyroscope Drift)');
 xlabel('Frame Number');
 ylabel('rad/sec');
 hold on;
@@ -107,7 +107,7 @@ legend('yaw', 'pitch', 'roll');
 % 
 % 
 % figure;
-% title('Correlation (Linear Bias)');
+% title('Correlation (Accelerometer Bias)');
 % xlabel('Frame Number');
 % ylabel('Correlation');
 % hold on;
@@ -117,7 +117,7 @@ legend('yaw', 'pitch', 'roll');
 % 
 % 
 % figure;
-% title('Correlation (Angular Bias)');
+% title('Correlation (Gyroscope Drift)');
 % xlabel('Frame Number');
 % ylabel('Correlation');
 % hold on;
