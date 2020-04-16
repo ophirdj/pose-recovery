@@ -34,26 +34,23 @@ F_PRV=fopen(out_prv,'wb');
 [Rn, Re, g, sL, cL, WIE_E]=geoparam_v000([0 0 0]');
 
 
-%%read the input data from the files
+% Ignore first record - junk
+fread(F_IMU,7,'double');
+fread(F_TRU, 10, 'double');
+fread(F_LIDAR,2,'double');
+
+% Read navigation, IMU, and LIDAR data
 imu_data=fread(F_IMU,7,'double');
 true_val = fread(F_TRU, 10, 'double');
 lidar_data=fread(F_LIDAR,2,'double');
 
-% skip first record (wierd bug - record is not correct)
-imu_data=fread(F_IMU,7,'double');
-true_val = fread(F_TRU, 10, 'double');
-lidar_data=fread(F_LIDAR,2,'double');
 
-
-% Assume we know initial position, velocity, and orientation (read it from
-% true_val)
+% Assume we know true initial position, velocity, and orientation
 pos = true_val(2:4);
 vel_n = true_val(5:7);
 att = true_val(8:10);
 Cbn = euler2dcm_v000(att);
-lidar = lidar_data(2:end);
 
-imu_tot = repmat([0 0 -g 0 0 0]', [1 dt/dt_lidar]);
 acc_bias = [0 0 0]';
 gyro_drift = [0 0 0]';
 
@@ -83,7 +80,7 @@ kalman.StateCovariance = ...
 
 while (~feof(F_IMU))
     pr_count=imu_data(1);
-    imu=imu_data(2:7);
+    imu=imu_data(2:7)-[acc_bias;gyro_drift];
     lidar=lidar_data(2:end);
     
     steps = pr_count-1;
@@ -112,31 +109,31 @@ while (~feof(F_IMU))
     % Write private data
     fwrite(F_PRV,[x(:); diag(kalman.StateCovariance)],'double');
 
-    m = mod(pr_count, dt/dt_lidar);
+    Phi = eye(length(x));
+    Phi(1:3,4:6) = eye(3)*dt;
+    Phi(4:6,7:9) = skew(Cbn*(imu(1:3)+[0 0 g]'));
+    Phi(4:6,10:12) = Cbn*dt;
+    Phi(7:9,13:15) = -Cbn*dt;
+    x = predict(kalman, Phi);
     
     % Effective LIDAR rate is dt/dt_lidar of IMU rate.    
-    if(m == 0)
+    if(mod(pr_count, dt/dt_lidar) == 0)
         % LIDAR available
-        Phi_tot = eye(length(x));
-        
-        for j=1:size(imu_tot, 2)
-            Phi = eye(length(x));
-            Phi(1:3,4:6) = eye(3)*dt;
-            Phi(4:6,7:9) = skew(Cbn*(imu_tot(1:3, j)+[0 0 g]'));
-            Phi(4:6,10:12) = Cbn*dt;
-            Phi(7:9,13:15) = -Cbn*dt;
-            Phi_tot = Phi * Phi_tot;
-        end
-    
-        predict(kalman, Phi_tot);
         x = correct(kalman, lidar, pos, Cbn, pr_count);
     end
     
-    imu_tot(:, 1+m) = imu;
+    % Correct the navigation solution and reset the error state
+    pos = pos-x(1:3);
+    vel_n = vel_n-x(4:6);
+    Cbn = euler2dcm_v000(x(7:9))*Cbn;
+    att = dcm2euler_v000(Cbn);
+    acc_bias = acc_bias+x(10:12);
+    gyro_drift = gyro_drift+x(13:15);
+    kalman.State = zeros(size(x));
     
     % IMU step
     [Cbn, vel_n, pos] = ...
-        strapdown_pln_dcm_v000(Cbn, vel_n, pos, imu(1:3)-acc_bias, imu(4:6)-gyro_drift, g, dt, 0);
+        strapdown_pln_dcm_v000(Cbn, vel_n, pos, imu(1:3), imu(4:6), g, dt, 0);
     
     if any(abs(pos_err)>30)
         success = false;
