@@ -126,39 +126,20 @@ if ~PathGenAll(PATH, mot_def, ini_pos, ray_angles, freq_Hz, DTM, cellsize, ini_v
     fprintf('Error generating path\n');
 else
     fprintf('Done %s\n', 'Line_100_1\');
-end
-% %% Circle_10_5
-% freq_Hz = 10;
-% n_rays = 5;
-% span_angle = pi/4;
-% ini_pos = [4500 4500 1500]';
-% ini_vel = [100 0 0]';
-% mot_def = [6 pi/16 0 0 0 1000;
-%             6 0 0 0 0 1;
-%            ];
-% PATH = [dir 'Circle_10_5\'];
-% if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize, ini_vel)
-%     fprintf('Error generating path\n');
-% else
-%     fprintf('Done %s\n', 'Circle_10_5\');
-% end
-% 
-% %% Circle_10_1
-% freq_Hz = 10;
-% n_rays = 1;
-% span_angle = pi/4;
-% ini_pos = [4500 4500 1500]';
-% mot_def = [2 0 0 0 100 1;
-%             6 pi/16 0 0 0 5000;
-%             6 0 0 0 0 1;
-%            ];
-% PATH = [dir 'Circle_10_1\'];
-% if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize)
-%     fprintf('Error generating path\n');
-% else
-%     fprintf('Done %s\n', 'Circle_10_1\');
-% end
-% 
+end 
+%% Circle_100_1
+freq_Hz = 100;
+ray_angles = -pi/6:pi/18:pi/6;
+ini_pos = [4500 4500 1500]';
+ini_vel = [10 0 0]';
+mot_def = [6 pi/16 0 0 0 5000];
+PATH = [dir 'Circle_100_1\'];
+if ~PathGenAll(PATH, mot_def, ini_pos, ray_angles, freq_Hz, DTM, cellsize, ini_vel)
+    fprintf('Error generating path\n');
+else
+    fprintf('Done %s\n', 'Line_100_1\');
+end 
+
 % %% Circle2_10_1
 % freq_Hz = 10;
 % n_rays = 1;
