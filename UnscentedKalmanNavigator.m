@@ -16,7 +16,17 @@ dt = 1/freq_Hz;
 cellsize = fread(F_META, 1, 'double');
 n_rays = fread(F_META, 1, 'double');
 ray_angles = fread(F_META, n_rays, 'double');
+nav_len = fread(F_META, 1, 'double');
 fclose(F_META);
+
+if ~size(nav_len,1)
+    nav_len = sim_len;
+end
+nav_len = min(nav_len, sim_len);
+
+o_err = zeros(11, nav_len);
+o_res = zeros(10, nav_len);
+o_prv = zeros(30, nav_len);
 
 dt_lidar = dt/10;
 
@@ -103,11 +113,11 @@ while (~feof(F_IMU))
     lidar_err_num_valid = sum(~isnan(lidar_err));
 
     % Write recovered results and errors
-    fwrite(F_ERR,[pr_count;pos_err;att_err;lidar_err_mean;lidar_err_num_valid;-1;-1],'double');
-    fwrite(F_RES,[pr_count;pos; att; Cbn'*vel_n],'double');
+    o_err(:, pr_count) = [pr_count;pos_err;att_err;lidar_err_mean;lidar_err_num_valid;-1;-1];
+    o_res(:, pr_count) = [pr_count;pos; att; Cbn'*vel_n];
 
     % Write private data
-    fwrite(F_PRV,[x(:); diag(kalman.StateCovariance)],'double');
+    o_prv(:, pr_count) = [x(:); diag(kalman.StateCovariance)];
 
     Phi = eye(length(x));
     Phi(1:3,4:6) = eye(3)*dt;
@@ -152,6 +162,12 @@ while (~feof(F_IMU))
     true_val = fread(F_TRU, 10, 'double');
     lidar_data=fread(F_LIDAR,2,'double');
 end
+
+% Write result matrices
+fwrite(F_ERR,o_err(:,1:1+steps),'double');
+fwrite(F_RES,o_res(:,1:1+steps),'double');
+fwrite(F_PRV,o_prv(:,1:1+steps),'double');
+
 
 fclose(F_IMU);
 fclose(F_LIDAR);

@@ -12,9 +12,13 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, 
     fwrite(F_META, cellsize, 'double');
     fwrite(F_META, length(ray_angles), 'double');
     fwrite(F_META, ray_angles, 'double');
-    fclose(F_META);
 
     gen_ground_truth(dir_name, mot_def, ini_pos, freq_Hz, vel);
+    
+    % Nav length
+    fwrite(F_META, size(readbin_v000([dir_name 'mnav.bin'],10), 2), 'double');
+    fclose(F_META);
+    
     success = LidarGen([dir_name 'mnav.bin'], [dir_name 'mlidar.bin'], ray_angles, DTM, cellsize);
 
     if ~success
