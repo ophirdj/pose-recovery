@@ -81,7 +81,7 @@ kalman.ProcessNoise = process_noise * dt_lidar;
 kalman.MeasurementNoise = measurement_noise;
 
 kalman.StateCovariance = ...
-    diag([1 1 1                                                     ... % pos
+    diag([2 2 2                                                     ... % pos
           1 1 1                                                     ... % vel
           (pi/180)^2 (pi/180)^2 (pi/180)^2                          ... % att
           1e-4 1e-4 1e-4                                            ... % bias-acc

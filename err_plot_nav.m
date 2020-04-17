@@ -75,14 +75,14 @@ hold on;
 grid;
 
 figure;
-subplot(1,2,1);
+subplot(2,1,1);
 plot(err(8,:));
 title('Err LIDAR (All)');
 hold on;
 grid;
 
-subplot(1,2,2);
-plot(err(8,mod(err(1,:),10)==0));
+subplot(2,1,2);
+plot(err(1,mod(err(1,:),10)==0), err(8,mod(err(1,:),10)==0));
 title('Err LIDAR (Measured)');
 hold on;
 grid;
