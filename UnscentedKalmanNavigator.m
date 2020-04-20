@@ -1,12 +1,12 @@
 function [success, steps] = UnscentedKalmanNavigator( in_mnav, in_mimu, in_mlidar, ...
     in_meta, out_res, out_err, out_prv, DTM, ...
-    process_noise, measurement_noise, kalman_alpha, sim_len, show_only)
+    process_noise, measurement_noise, kalman_alpha, kalman_P, sim_len, show_only)
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
-if nargin < 12
+if nargin < 13
     sim_len = 0;
 end
-if nargin < 13
+if nargin < 14
     show_only = 0;
 end
 
@@ -79,14 +79,7 @@ kalman = unscentedKalmanFilter(f,h,x);
 kalman.Alpha = kalman_alpha;
 kalman.ProcessNoise = process_noise * dt_lidar;
 kalman.MeasurementNoise = measurement_noise;
-
-kalman.StateCovariance = ...
-    diag([2 2 2                                                     ... % pos
-          1 1 1                                                     ... % vel
-          (pi/180)^2 (pi/180)^2 (pi/180)^2                          ... % att
-          1e-4 1e-4 1e-4                                            ... % bias-acc
-          (10*pi/180/3600)^2 (10*pi/180/3600)^2 (10*pi/180/3600)^2  ... % bias-gyr
-          ]);
+kalman.StateCovariance = kalman_P;
 
 while (~feof(F_IMU))
     pr_count=imu_data(1);
@@ -103,7 +96,7 @@ while (~feof(F_IMU))
     pos_err=pos-true_val(2:4);
 
     % Calculate attitude error
-    att_err = mod(att-true_val(8:10)+pi,2*pi)-pi;
+    att_err = dcm2euler_v000(euler2dcm_v000(true_val(8:10))*Cbn');
 
     % Calculate LIDAR error
     lidar_projected = CalcRayDistances(pos, [0 1 0; 1 0 0; 0 0 -1] * Cbn, ...
@@ -129,7 +122,10 @@ while (~feof(F_IMU))
     % Effective LIDAR rate is dt/dt_lidar of IMU rate.    
     if(mod(pr_count, dt/dt_lidar) == 0)
         % LIDAR available
-        x = correct(kalman, lidar, pos, Cbn, pr_count);
+%         if abs(kalman_ray_trace(x, pos, Cbn, pr_count, rays, DTM, cellsize)-lidar) > 1e-3
+            % Innovation large enough
+            x = correct(kalman, lidar, pos, Cbn, pr_count);
+%         end
     end
     
     % Correct the navigation solution and reset the error state

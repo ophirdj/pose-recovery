@@ -17,7 +17,7 @@ RES_FILENAME = 'res_unscented.bin';
 PRV_FILENAME = 'prv_unscented.bin';
 
 show_only = 2;
-sim_len = 6000;
+sim_len = 1000;
 
 scenarios = {};
 scenario_names = {};
@@ -29,12 +29,21 @@ for k = 1:length(PATHS)
     F_LOG = fopen([PATH 'log.txt'],'w');
     ls{end+1} = F_LOG;
     
-    process_noise = diag([0 0 0 ... % pos
-                          1e-6 1e-6 1e-6 ... % vel (acc variance)
-                          (0.1*pi/180/60)^2 (0.1*pi/180/60)^2 (0.1*pi/180/60)^2 ... % att
-                          0 0 0 ... % acc-bias
-                          0 0 0 ... % gyr-bias
-                          ]);
+    Q = ...
+        diag([1e-1 1e-1 1e-2                                         ... % pos
+              1e-6 1e-6 1e-6                                         ... % vel (acc variance)
+              (0.1*pi/180/60)^2 (0.1*pi/180/60)^2 (0.1*pi/180/60)^2  ... % att
+              0 0 0                                                  ... % acc-bias
+              0 0 0                                                  ... % gyr-bias
+              ]);
+                      
+    P = ...
+    diag([2 2 5e-1                                                   ... % pos
+          1e-1 1e-1 1e-1                                                      ... % vel
+          (0.5*pi/180)^2 (0.5*pi/180)^2 (0.5*pi/180)^2               ... % att
+          1e-4 1e-4 1e-4                                             ... % bias-acc
+          (10*pi/180/3600)^2 (10*pi/180/3600)^2 (10*pi/180/3600)^2   ... % bias-gyr
+          ]);
     
     % Ground Truth
     scenario_names{end+1} = 'Ground Truth';
@@ -42,7 +51,7 @@ for k = 1:length(PATHS)
     scenarios{end+1} = @()...
     UnscentedKalmanNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
         [PATH 'meta.bin'], [PATH RES_FILENAME], [PATH ERR_FILENAME], [PATH PRV_FILENAME], ...
-        DTM, process_noise, 1e-6, 1e-3, sim_len, show_only);
+        DTM, Q, 1e-6, 1e-3, P, sim_len, show_only);
 
 %     % IMU
 %     for linear_err = [1e0]
@@ -53,7 +62,7 @@ for k = 1:length(PATHS)
 %             scenarios{end+1} = @()...
 %             UnscentedKalmanNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
 %                 [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...,
-%                 DTM, 1e-4, 1e-6, 0.577, sim_len, show_only);
+%                 DTM, 1e-4, 1e-6, 0.577, P, sim_len, show_only);
 %         end
 %     end
     

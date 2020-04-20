@@ -19,15 +19,6 @@ plot(x(1:3,:)');
 legend('X', 'Y', 'Z');
 
 subplot(2,3,2);
-title('Velocity Correction Over Time');
-xlabel('Frame Number');
-ylabel('Velocity Correction (m/sec)');
-hold on;
-grid;
-plot(x(4:6,:)');
-legend('X', 'Y', 'Z');
-
-subplot(2,3,3);
 title('Attitude Correction Over Time');
 xlabel('Frame Number');
 ylabel('Attitude Correction rad');
@@ -36,8 +27,17 @@ grid;
 plot(x(7:9,:)');
 legend('yaw', 'pitch', 'roll');
 
+subplot(2,3,3);
+title('Velocity Correction Over Time');
+xlabel('Frame Number');
+ylabel('Velocity Correction (m/sec)');
+hold on;
+grid;
+plot(x(4:6,:)');
+legend('X', 'Y', 'Z');
+
 subplot(2,3,4);
-title('Accelerometer Bias Correction Over Time');
+title('Bias Correction Over Time');
 xlabel('Frame Number');
 ylabel('Accelerometer Bias Correction (m/sec)');
 hold on;
@@ -46,7 +46,7 @@ plot(x(10:12,:)');
 legend('X', 'Y', 'Z');
 
 subplot(2,3,5);
-title('Gyroscope Drift Correction Over Time');
+title('Drift Correction Over Time');
 xlabel('Frame Number');
 ylabel('Gyroscope Drift Correction (rad/sec)');
 hold on;
@@ -85,7 +85,7 @@ plot(C_sqrt(4:6,:)');
 legend('X', 'Y', 'Z');
 
 subplot(2,3,4);
-title('Square Root of Covariance (Accelerometer Bias)');
+title('Square Root of Covariance (Bias)');
 xlabel('Frame Number');
 ylabel('m/sec');
 hold on;
@@ -94,7 +94,7 @@ plot(C_sqrt(10:12,:)');
 legend('X', 'Y', 'Z');
 
 subplot(2,3,5);
-title('Square Root of Covariance (Gyroscope Drift)');
+title('Square Root of Covariance (Drift)');
 xlabel('Frame Number');
 ylabel('rad/sec');
 hold on;
@@ -131,7 +131,7 @@ plot(rho(4:6,:)');
 legend('X', 'Y', 'Z');
 
 subplot(2,3,4);
-title('Correlation (Accelerometer Bias)');
+title('Correlation (Bias)');
 xlabel('Frame Number');
 ylabel('Correlation');
 hold on;
@@ -140,7 +140,7 @@ plot(rho(10:12,:)');
 legend('X', 'Y', 'Z');
 
 subplot(2,3,5);
-title('Correlation (Gyroscope Drift)');
+title('Correlation (Drift)');
 xlabel('Frame Number');
 ylabel('Correlation');
 hold on;
