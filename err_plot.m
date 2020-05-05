@@ -1,18 +1,8 @@
 PATHS = {...
-        'C:\Users\Ophir\matlab_workspace\trajectories\Circle_10_5\',...
-%         'C:\Users\Ophir\matlab_workspace\trajectories\Path_1_30_20\',...
-%         'C:\Users\Ophir\matlab_workspace\trajectories\Path_1_100_20\',...
-%         'C:\Users\Ophir\matlab_workspace\trajectories\Path_2_100_20\',...
-%         'C:\Users\Ophir\matlab_workspace\trajectories\Circle_100_20\',...
-%         'C:\Users\Ophir\matlab_workspace\trajectories\Curve_100_20\',...
+        'C:\Users\Ophir\matlab_workspace\trajectories\Line_100_1\'
         };
 freqs = [ ...
-    10 ...
-%     30 ...
-%     100 ...
-%     100 ...
-%     100 ...
-%     100 ...
+    100 ...
     ];
 
 NAVIGATOR = 'unscented';
@@ -23,8 +13,8 @@ RES_FILENAME = ['res_' NAVIGATOR '.bin'];
 MIN_SAMPLE_SIZE = 50;
     
 %IMU
-linear_errs = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0];
-angular_errs = [0 1e-4 1e-2 1e-1 1e0 2e0 5e0];
+linear_errs = [0 1e-4 5e-4 1e-3 5e-3 1e-2 5e-2 1e-1 5e-1 1e0 5e0];
+angular_errs = [0 1e-4 5e-4 1e-3 5e-3 1e-2];
 imu_mean = zeros(length(linear_errs), length(angular_errs), 2);
 imu_legal = zeros(length(linear_errs), length(angular_errs));
 le = linear_errs;
@@ -54,7 +44,7 @@ for linear_err = 1:length(linear_errs)
     for angular_err = 1:length(angular_errs)
         F_ERR = [PATH sprintf('imu_%.0d_%.0d/%s', linear_errs(linear_err), angular_errs(angular_err), ERR_FILENAME)];
         if (linear_err) == 1 && (angular_err == 1)
-            F_ERR = [PATH 'err.bin'];
+            F_ERR = [PATH ERR_FILENAME];
         end
         err=readbin_v000(F_ERR,11);
         if size(err, 2) < MIN_SAMPLE_SIZE
@@ -135,7 +125,7 @@ window_mean = window_mean ./ repmat(window_legal, 1, 2);
 %IMU
 [X, Y] = meshgrid(le, ae .* 1e3);
 figure;
-contour(X, Y, imu_mean(:,:,1));
+contour(X, Y, imu_mean(:,:,1)');
 set(gca, 'xscale', 'log');
 set(gca, 'yscale', 'log');
 xlabel('Linear error (m/sec)');
@@ -145,7 +135,7 @@ colorbar();
 title('Position Error vs IMU');
 
 figure;
-contour(X, Y, imu_mean(:,:,2) * 1e3);
+contour(X, Y, imu_mean(:,:,2)' * 1e3);
 set(gca, 'xscale', 'log');
 set(gca, 'yscale', 'log');
 xlabel('Linear error (m/sec)');

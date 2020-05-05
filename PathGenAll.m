@@ -5,17 +5,15 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, 
     if ~isdir(dir_name)
         mkdir(dir_name);
     end
-
+    
+    gen_ground_truth(dir_name, mot_def, ini_pos, freq_Hz, vel);
+    
     % Save metadata
     F_META = fopen([dir_name 'meta.bin'], 'wb');
     fwrite(F_META, freq_Hz, 'double');
     fwrite(F_META, cellsize, 'double');
     fwrite(F_META, length(ray_angles), 'double');
     fwrite(F_META, ray_angles, 'double');
-
-    gen_ground_truth(dir_name, mot_def, ini_pos, freq_Hz, vel);
-    
-    % Nav length
     fwrite(F_META, size(readbin_v000([dir_name 'mnav.bin'],10), 2), 'double');
     fclose(F_META);
     
@@ -26,63 +24,65 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, 
     end
     
     %IMU
-    for linear_err = [0 1e-16 1e-14 1e-12 1e-10 1e-8 1e-6 1e-4 1e-2 1e-1 1e0]
-        for angular_err = [0 1e-16 1e-14 1e-12 1e-10 1e-8 1e-6 1e-4 1e-2 1e-1 1e0]
-            dir = [dir_name sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
+    for accelerometer_variance = [0 1e-4 5e-4 1e-3 5e-3 1e-2 5e-2 1e-1 5e-1 1e0 5e0]
+        for gyro_variance = [0 1e-4 5e-4 1e-3 5e-3 1e-2]
+            dir = [dir_name sprintf('imu_%.0d_%.0d/', accelerometer_variance, gyro_variance)];
             if ~isdir(dir)
                 mkdir(dir);
             elseif isdir(dir)
 %                 continue;
             end
-            gen_imu_err_v000(dir_name, dir, linear_err, angular_err);
+            gen_imu_err_v000(dir_name, dir, ...
+                accelerometer_variance, gyro_variance, 0, 0);
+        end
+    end
+    
+    % Bias & drift
+    for accelerometer_bias = [0 1e-2 1e-1 1e0 1e1 1e2]
+        for gyro_drift = [0 1e-3 5e-3 1e-2 5e-2 1e-1 5e-1 1e0]
+            dir = [dir_name sprintf('bd_%.0d_%.0d/', accelerometer_bias, gyro_drift)];
+            if ~isdir(dir)
+                mkdir(dir);
+            elseif isdir(dir)
+%                 continue;
+            end
+            gen_imu_err_v000(dir_name, dir, 0, 0, ...
+                accelerometer_bias / (60 * freq_Hz), gyro_drift / (60 * freq_Hz));
         end
     end
 
-%     %DTM
-%     for dtm_err = [0 1e-2 1e-1 1e0 2e0 5e0 1e1]
-%         dir = [dir_name sprintf('dtm_%.0d/', dtm_err)];
-%         if ~isdir(dir)
-%             mkdir(dir);
-%         end
-%         errDTM = DTM + dtm_err .* randn(size(DTM));
-%         success = LidarGen([dir_name 'mnav.bin'], [dir 'mlidar.bin'], n_rays, span_angle, errDTM, cellsize);
-%         
-%         if ~success
-%             return
-%         end
-%     end
-%     
-%     %LIDAR
-%     lidar = readbin_v000([dir_name 'mlidar.bin'],2+2*n_rays);
-%     for lidar_err = [0 1e-4 1e-3 1e-2 1e-1 1e0 5e0]
-%         dir = [dir_name sprintf('lidar_%.0d/', lidar_err)];
-%         if ~isdir(dir)
-%             mkdir(dir);
-%         end
-%         
-%         l = lidar(2:end,:);
-%         le = l + lidar_err .* (2.* rand(size(l)) - 1);
-%         o = [lidar(1,:);le];
-%         
-%         F_LIDAR = fopen([dir 'mlidar.bin'], 'wb');
-%         for n=1:size(o, 2)
-%             fwrite(F_LIDAR, o(:, n), 'double');
-%         end
-%         fclose(F_LIDAR);
-%     end
-% 
-% 
-% %     linear_err = 1e-3;
-% %     angular_err = 1e-3;
-% %     for n=1:500
-% %         dir = [dir_name sprintf('monte_carlo_%d/', n)];
-% %         if ~isdir(dir)
-% %             mkdir(dir);
-% %         elseif isdir(dir)
-% %             continue;
-% %         end
-% %         gen_imu_err(dir_name, dir, linear_err, angular_err);
-% %     end
+    %DTM
+    for dtm_err = [0 1e-2 1e-1 1e0 2e0 5e0 1e1]
+        dir = [dir_name sprintf('dtm_%.0d/', dtm_err)];
+        if ~isdir(dir)
+            mkdir(dir);
+        end
+        errDTM = DTM + dtm_err .* randn(size(DTM));
+        success = LidarGen([dir_name 'mnav.bin'], [dir 'mlidar.bin'], ray_angles, errDTM, cellsize);
+        
+        if ~success
+            return
+        end
+    end
+    
+    %LIDAR
+    lidar = readbin_v000([dir_name 'mlidar.bin'],2);
+    for lidar_err = [0 1e-4 1e-3 1e-2 5e-2 1e-1 5e-1 1e0 5e0 1e1]
+        dir = [dir_name sprintf('lidar_%.0d/', lidar_err)];
+        if ~isdir(dir)
+            mkdir(dir);
+        end
+        
+        l = lidar(2:end,:);
+        le = l + lidar_err .* (2.* rand(size(l)) - 1);
+        o = [lidar(1,:);le];
+        
+        F_LIDAR = fopen([dir 'mlidar.bin'], 'wb');
+        for n=1:size(o, 2)
+            fwrite(F_LIDAR, o(:, n), 'double');
+        end
+        fclose(F_LIDAR);
+    end
 end
 
 
@@ -103,14 +103,16 @@ function [] = gen_ground_truth(dir_name, mot_def, ini_pos, freq_Hz, vel)
     fclose(F_MNAV);
 end
 
-function [] = gen_imu_err_v000(nav_dir, dir_name, linear_err, angular_err)
+function [] = gen_imu_err_v000(nav_dir, dir_name, ...
+                               accelerometer_variance, gyro_variance, ...
+                               accelerometer_bias, gyro_drift)
     F_MIMU = fopen([nav_dir 'mimu.bin'], 'rb');
     F_EIMU = fopen([dir_name 'eimu.bin'], 'wb');
     imu_data = fread(F_MIMU,7,'double');
     while (~feof(F_MIMU))
         pr_count = imu_data(1);
-        accelerometer = imu_data(2:4) + randn(3,1)*linear_err;
-        gyroscope = imu_data(5:7) + randn(3,1)*angular_err;
+        accelerometer = imu_data(2:4) + accelerometer_bias + randn(3,1)*accelerometer_variance;
+        gyroscope = imu_data(5:7) + gyro_drift + randn(3,1)*gyro_variance;
         fwrite(F_EIMU, [pr_count;accelerometer(:);gyroscope(:)], 'double');
         imu_data = fread(F_MIMU,7,'double');
     end
