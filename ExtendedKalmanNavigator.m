@@ -1,21 +1,34 @@
-function success = ExtendedKalmanNavigator( in_mnav, in_mimu, in_mlidar, ...
-    in_meta, out_res, out_err, out_prv, window_size, DTM, sim_len, show_only )
+function [success, steps] = ExtendedKalmanNavigator( in_mnav, in_mimu, in_mlidar, ...
+    in_meta, out_res, out_err, out_prv, DTM, ...
+    process_noise, measurement_noise, kalman_alpha, kalman_P, sim_len, show_only)
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
-if nargin < 10
+if nargin < 13
     sim_len = 0;
 end
-if nargin < 11
+if nargin < 14
     show_only = 0;
 end
 
 F_META = fopen(in_meta, 'rb');
 freq_Hz = fread(F_META, 1, 'double');
 dt = 1/freq_Hz;
-n_rays = fread(F_META, 1, 'double');
-span_angle = fread(F_META, 1, 'double');
 cellsize = fread(F_META, 1, 'double');
+n_rays = fread(F_META, 1, 'double');
+ray_angles = fread(F_META, n_rays, 'double');
+nav_len = fread(F_META, 1, 'double');
 fclose(F_META);
+
+if ~size(nav_len,1)
+    nav_len = sim_len;
+end
+nav_len = min(nav_len, sim_len);
+
+o_err = zeros(11, nav_len);
+o_res = zeros(10, nav_len);
+o_prv = zeros(30, nav_len);
+
+dt_lidar = dt/10;
 
 success = true;
 if show_only == 0 || show_only == 2
@@ -31,89 +44,104 @@ F_PRV=fopen(out_prv,'wb');
 [Rn, Re, g, sL, cL, WIE_E]=geoparam_v000([0 0 0]');
 
 
-%%read the input data from the files
+% Ignore first record - junk
+fread(F_IMU,7,'double');
+fread(F_TRU, 10, 'double');
+fread(F_LIDAR,2,'double');
+
+% Read navigation, IMU, and LIDAR data
 imu_data=fread(F_IMU,7,'double');
 true_val = fread(F_TRU, 10, 'double');
-lidar_data=fread(F_LIDAR,1+n_rays,'double');
-
-% skip first record (wierd bug - record is not correct)
-imu_data=fread(F_IMU,7,'double');
-true_val = fread(F_TRU, 10, 'double');
-lidar_data=fread(F_LIDAR,1+n_rays,'double');
+lidar_data=fread(F_LIDAR,2,'double');
 
 
-% Assume we know initial position, velocity, and orientation (read it from
-% true_val)
-pos_init = true_val(2:4);
-pos = pos_init;
+% Assume we know true initial position, velocity, and orientation
+pos = true_val(2:4);
 vel_n = true_val(5:7);
 att = true_val(8:10);
 Cbn = euler2dcm_v000(att);
-lidar = lidar_data(2:end);
+
+acc_bias = [0 0 0]';
+gyro_drift = [0 0 0]';
 
 % LIDAR  model
-rays = GenerateRays(span_angle / ((n_rays-1)/2), ((n_rays-1)/2));
+rays = GenerateRays(ray_angles);
 
 
 % Kalman filter initialization
+x = zeros(15,1);
 
-% x = [position velocity attitude linear_bias angular_bias]
-x = [0 0 0 vel_n' att' 0 0 0 0 0 0]';
+f = @(x,Phi)(Phi*x);
+h = @(x, pos, Cbn, pr_count)(kalman_ray_trace_linear(x, pos, Cbn, pr_count, rays, DTM, cellsize));
 
-f = @(x,u)(ins_nav(x, u, g, dt, pos_init));
-h = @(x)(kalman_ray_trace(x, rays, DTM, cellsize, pos_init));
+kalman = extendedKalmanFilter(f,h,x);
 
-kalman = unscentedKalmanFilter(f,h,x);
+% kalman.Alpha = kalman_alpha;
+kalman.ProcessNoise = process_noise * dt_lidar;
+kalman.MeasurementNoise = measurement_noise;
+kalman.StateCovariance = kalman_P;
 
 while (~feof(F_IMU))
     pr_count=imu_data(1);
-    imu=imu_data(2:7);
+    imu=imu_data(2:7)-[acc_bias;gyro_drift];
     lidar=lidar_data(2:end);
+    
+    steps = pr_count-1;
 
-    fprintf('%d\n', pr_count);
+    if mod(pr_count, 100) == 0 
+        fprintf('%d\n', pr_count);
+    end
     
     % Calculate position error
     pos_err=pos-true_val(2:4);
 
     % Calculate attitude error
-    att_err = mod(att-true_val(8:10)+pi,2*pi)-pi;
+    att_err = dcm2euler_v000(euler2dcm_v000(true_val(8:10))*Cbn');
 
     % Calculate LIDAR error
-    lidar_err = CalcRayDistances(pos, Cbn * diag([1 1 -1]), rays, DTM, cellsize)'-lidar;
+    lidar_projected = CalcRayDistances(pos, [0 1 0; 1 0 0; 0 0 -1] * Cbn, ...
+        rays(:,1+mod(pr_count,size(rays,2))), DTM, cellsize)';
+    lidar_err = lidar_projected-lidar;
     lidar_err_mean = mean(lidar_err(~isnan(lidar_err)));
     lidar_err_num_valid = sum(~isnan(lidar_err));
 
     % Write recovered results and errors
-    fwrite(F_ERR,[pr_count;pos_err;att_err;lidar_err_mean;lidar_err_num_valid;-1;-1],'double');
-    fwrite(F_RES,[pr_count;pos; att; Cbn'*vel_n],'double');
+    o_err(:, pr_count) = [pr_count;pos_err;att_err;lidar_err_mean;lidar_err_num_valid;-1;-1];
+    o_res(:, pr_count) = [pr_count;pos; att; Cbn'*vel_n];
 
     % Write private data
-    fwrite(F_PRV,[x(:); diag(kalman.StateCovariance)],'double');
+    o_prv(:, pr_count) = [x(:); diag(kalman.StateCovariance)];
+
+    Phi = eye(length(x));
+    Phi(1:3,4:6) = eye(3)*dt;
+    Phi(4:6,7:9) = skew(Cbn*(imu(1:3)+[0 0 g]'));
+    Phi(4:6,10:12) = Cbn*dt;
+    Phi(7:9,13:15) = -Cbn*dt;
+    x = predict(kalman, Phi);
     
-    
-    
-    data.IMU = imu;
-    data.tru = true_val;
-    
-    x = predict(kalman, data);
-    
-    % Effective LIDAR rate is 1/10th of IMU.
-    % IMU = 100Hz => LIDAR = 10Hz;
-    if(mod(pr_count, 10)==0)
-        try
-            x = correct(kalman, lidar);
-        catch
-            % Skip correction
-        end
+    % Effective LIDAR rate is dt/dt_lidar of IMU rate.    
+    if(mod(pr_count, dt/dt_lidar) == 0)
+        % LIDAR available
+%         if abs(kalman_ray_trace(x, pos, Cbn, pr_count, rays, DTM, cellsize)-lidar) > 1e-3
+            % Innovation large enough
+            x = correct(kalman, lidar, pos, Cbn, pr_count);
+%         end
     end
-
-    pos = x(1:3)+pos_init;
-    vel = x(4:6);
-    att = x(7:9);
-    Cbn = euler2dcm_v000(att);
-
-
-    if any(abs(pos_err)>50)
+    
+    % Correct the navigation solution and reset the error state
+    pos = pos-x(1:3);
+    vel_n = vel_n-x(4:6);
+    Cbn = euler2dcm_v000(x(7:9))*Cbn;
+    att = dcm2euler_v000(Cbn);
+    acc_bias = acc_bias+x(10:12);
+    gyro_drift = gyro_drift+x(13:15);
+    kalman.State = zeros(size(x));
+    
+    % IMU step
+    [Cbn, vel_n, pos] = ...
+        strapdown_pln_dcm_v000(Cbn, vel_n, pos, imu(1:3), imu(4:6), g, dt, 0);
+    
+    if any(abs(pos_err)>30)
         success = false;
         break;
     end
@@ -124,12 +152,18 @@ while (~feof(F_IMU))
     elseif sim_len > 0
         sim_len = sim_len - 1;
     end
-
+    
     % Read next records
     imu_data=fread(F_IMU,7,'double');
     true_val = fread(F_TRU, 10, 'double');
-    lidar_data=fread(F_LIDAR,1+n_rays,'double');
+    lidar_data=fread(F_LIDAR,2,'double');
 end
+
+% Write result matrices
+fwrite(F_ERR,o_err(:,1:1+steps),'double');
+fwrite(F_RES,o_res(:,1:1+steps),'double');
+fwrite(F_PRV,o_prv(:,1:1+steps),'double');
+
 
 fclose(F_IMU);
 fclose(F_LIDAR);
@@ -143,37 +177,19 @@ end
 end
 %% Show results
 err_plot_nav(out_err,out_res,in_mnav,DTM,cellsize,success);
+kalman_plot(out_prv);
 end
 
-%%
+%% Supporting functions
+function [rho] = kalman_ray_trace_linear(x, pos, Cbn, pr_count, rays, DTM, cellsize)
+    dP = x(1:3);
+    dXi = x(7:9);
 
-function [xf] = ins_nav(x, data, g, dt, pos_init)
-    imu = data.IMU;
-    tru = data.tru;
+    P = pos - dP;
+    R = [0 1 0; 1 0 0; 0 0 -1] * euler2dcm_v000(dXi) * Cbn;
+    ray = rays(:,1 + mod(pr_count,size(rays,2)));
     
-    [Cbn, vel_n, pos]=strapdown_pln_dcm_v000(euler2dcm_v000(x(7:9)), x(4:6), x(1:3)+pos_init, imu(1:3) - x(10:12), imu(4:6) - x(13:15)*1e-3, g, dt, 0);
-     xf = zeros(size(x));
-     
-    xf(1:3) = pos-pos_init; %position
-    xf(4:6) = vel_n; %velocity
-    xf(7:9) = dcm2euler_v000(Cbn); %attitude
-    xf(10:12) = x(10:12); %linear_bias
-    xf(13:15) = x(13:15); %angular_bias
-
-%     xf(1:3) = tru(2:4)-pos_init; %position
-%     xf(4:6) = tru(5:7); %velocity
-%     xf(7:9) = tru(8:10); %attitude
-%     xf(10:12) = x(10:12); %linear_bias
-%     xf(13:15) = x(13:15); %angular_bias
-end
-
-function [rho] = kalman_ray_trace(x, rays, DTM, cellsize, pos_init)
-    P = x(1:3) + pos_init;
-    R = euler2dcm_v000(x(7:9)) * diag([1 1 -1]);
-    dP = x(10:12);
-    dXi = x(13:15);
-    
-    [rho_c, P_L, R_dot_lambda] = CalcRayDistances(P, R, rays, DTM, cellsize);
+    [rho_c, P_L, R_dot_lambda] = CalcRayDistances(P, R, ray, DTM, cellsize);
     
     N = GetSurfaceNormal(P_L(1,:), P_L(2,:), DTM, cellsize);
     
@@ -182,6 +198,4 @@ function [rho] = kalman_ray_trace(x, rays, DTM, cellsize, pos_init)
     for n = 1:length(rho)
         rho(n) = rho_c(n) + N(:,n)' / (N(:,n)' * R_dot_lambda(:,n)) * (dP - rho_c(n) * Wedge(R_dot_lambda) * dXi);
     end
-    
-%     rho = rho_c + (N ./ repmat(dot(N,R_dot_lambda), [3 1])) * (repmat(dP, [1 size(rays, 2)]) - rho_c * Wedge(R_dot_lambda) * dXi);
 end

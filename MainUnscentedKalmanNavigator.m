@@ -16,8 +16,8 @@ ERR_FILENAME = 'err_unscented.bin';
 RES_FILENAME = 'res_unscented.bin';
 PRV_FILENAME = 'prv_unscented.bin';
 
-show_only = 2;
-sim_len = 1000;
+show_only = 0;
+sim_len = 6000;
 
 scenarios = {};
 scenario_names = {};
@@ -52,59 +52,59 @@ for k = 1:length(PATHS)
     UnscentedKalmanNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
         [PATH 'meta.bin'], [PATH RES_FILENAME], [PATH ERR_FILENAME], [PATH PRV_FILENAME], ...
         DTM, Q, 1e-6, 1e-3, P, sim_len, show_only);
-
-%     % IMU
-%     for linear_err = [1e0]
-%         for angular_err = [1e-2]
-%             scenario_names{end+1} = sprintf('%s %.0d %.0d', 'IMU', linear_err, angular_err);
-%             logs{end+1} = F_LOG;
-%             dir = [PATH sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
-%             scenarios{end+1} = @()...
-%             UnscentedKalmanNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
-%                 [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...,
-%                 DTM, 1e-4, 1e-6, 0.577, P, sim_len, show_only);
-%         end
-%     end
     
-%     % IMU
-%     for linear_err = [0 1e-16 1e-14 1e-12 1e-10 1e-8 1e-6 1e-4 1e-2 1e-1 1e0]
-%         for angular_err = [0 1e-16 1e-14 1e-12 1e-10 1e-8 1e-6 1e-4 1e-2 1e-1 1e0]
-%             scenario_names{end+1} = sprintf('%s %.0d %.0d', 'IMU', linear_err, angular_err);
-%             logs{end+1} = F_LOG;
-%             dir = [PATH sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
-%             scenarios{end+1} = @()...
-%             UnscentedKalmanNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
-%                 [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...,
-%                 window, DTM, sim_len, show_only);
-%         end
-%     end
-%     
-%     % DTM
-%     for dtm_err = [0 1e-2 1e-1 1e0 2e0 5e0 1e1]
-%         scenario_names{end+1} = sprintf('%s %.0d', 'DTM', dtm_err);
-%         logs{end+1} = F_LOG;
-%         dir = [PATH sprintf('dtm_%.0d/', dtm_err)];
-%         scenarios{end+1} = @()...
-%         UnscentedKalmanNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
-%                 [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...,
-%                 window, DTM, sim_len, show_only);
-%     end
-%     
-%     % LIDAR
-%     for lidar_err = [0 1e-4 1e-3 1e-2 1e-1 1e0 5e0]
-%         scenario_names{end+1} = sprintf('%s %.0d\n', 'LIDAR', lidar_err);
-%         logs{end+1} = F_LOG;
-%         dir = [PATH sprintf('lidar_%.0d/', lidar_err)];
-%         scenarios{end+1} = @()...
-%         UnscentedKalmanNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
-%                 [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...,
-%                 window, DTM, sim_len, show_only);
-%     end
+    % IMU
+    for linear_err = [0 1e-4 5e-4 1e-3 5e-3 1e-2 5e-2 1e-1 5e-1 1e0 5e0]
+        for angular_err = [0 1e-4 5e-4 1e-3 5e-3 1e-2]
+            scenario_names{end+1} = sprintf('%s %.0d %.0d', 'IMU', linear_err, angular_err);
+            logs{end+1} = F_LOG;
+            dir = [PATH sprintf('imu_%.0d_%.0d/', linear_err, angular_err)];
+            scenarios{end+1} = @()...
+            UnscentedKalmanNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
+        [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...
+        DTM, Q, 1e-6, 1e-3, P, sim_len, show_only);
+        end
+    end
+    
+    % Bias & drift
+    for accelerometer_bias = [0 1e-2 1e-1 1e0 1e1 1e2]
+        for gyro_drift = [0 1e-3 5e-3 1e-2 5e-2 1e-1 5e-1 1e0]
+            scenario_names{end+1} = sprintf('%s %.0d %.0d', 'Bias/drift', accelerometer_bias, gyro_drift);
+            logs{end+1} = F_LOG;
+            dir = [PATH sprintf('bd_%.0d_%.0d/', accelerometer_bias, gyro_drift)];
+            scenarios{end+1} = @()...
+            UnscentedKalmanNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
+        [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...
+        DTM, Q, 1e-6, 1e-3, P, sim_len, show_only);
+        end
+    end
+    
+    % DTM
+    for dtm_err = [0 1e-2 1e-1 1e0 2e0 5e0 1e1]
+        scenario_names{end+1} = sprintf('%s %.0d', 'DTM', dtm_err);
+        logs{end+1} = F_LOG;
+        dir = [PATH sprintf('dtm_%.0d/', dtm_err)];
+        scenarios{end+1} = @()...
+        UnscentedKalmanNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
+            [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...
+            DTM, Q, 1e-6, 1e-3, P, sim_len, show_only);
+    end
+    
+    % LIDAR
+    for lidar_err = [0 1e-4 1e-3 1e-2 5e-2 1e-1 5e-1 1e0 5e0 1e1]
+        scenario_names{end+1} = sprintf('%s %.0d\n', 'LIDAR', lidar_err);
+        logs{end+1} = F_LOG;
+        dir = [PATH sprintf('lidar_%.0d/', lidar_err)];
+        scenarios{end+1} = @()...
+        UnscentedKalmanNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [dir 'mlidar.bin'], ...
+            [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...
+            DTM, Q, 1e-6, 1e-3, P, sim_len, show_only);
+    end
     
 end
 %%
-% parfor j = 1:length(scenarios)
-for j = 1:length(scenarios)
+parfor j = 1:length(scenarios)
+% for j = 1:length(scenarios)
     try
         fprintf('%s\n', scenario_names{j});
         if scenarios{j}()
@@ -112,7 +112,7 @@ for j = 1:length(scenarios)
         else
             fprintf('%s FAIL\n', scenario_names{j});
         end
-%         close all;
+        close all;
     catch e
         fprintf(logs{j}, '%s\n%s\n', scenario_names{j}, getReport(e));
         fprintf('%s\n%s\n', scenario_names{j}, getReport(e));
