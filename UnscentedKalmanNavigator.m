@@ -72,6 +72,7 @@ rays = GenerateRays(ray_angles);
 x = zeros(15,1);
 
 f = @(x,Phi)(Phi*x);
+df = @(x,Phi)(Phi);
 h = @(x, pos, Cbn, pr_count)(kalman_ray_trace(x, pos, Cbn, pr_count, rays, DTM, cellsize));
 
 kalman = unscentedKalmanFilter(f,h,x);
@@ -117,15 +118,23 @@ while (~feof(F_IMU))
     Phi(4:6,7:9) = skew(Cbn*(imu(1:3)+[0 0 g]'));
     Phi(4:6,10:12) = Cbn*dt;
     Phi(7:9,13:15) = -Cbn*dt;
-    x = predict(kalman, Phi);
+    
+    Q = kalman.ProcessNoise;
+    P = kalman.StateCovariance;
+    x = kalman.State;
+    
+    % Linear update - can use EKF for speed
+    [x, P] = matlabshared.tracking.internal.EKFPredictorAdditive.predict( ...
+        Q, x, P, f, df, Phi);
+    
+    kalman.State = x;
+    kalman.StateCovariance = P;
     
     % Effective LIDAR rate is dt/dt_lidar of IMU rate.    
     if(mod(pr_count, dt/dt_lidar) == 0)
         % LIDAR available
-%         if abs(kalman_ray_trace(x, pos, Cbn, pr_count, rays, DTM, cellsize)-lidar) > 1e-3
-            % Innovation large enough
             x = correct(kalman, lidar, pos, Cbn, pr_count);
-%         end
+            kalman.State = zeros(size(x));
     end
     
     % Correct the navigation solution and reset the error state
