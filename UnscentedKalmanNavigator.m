@@ -75,9 +75,10 @@ h = @(x, pos, Cbn, ray)(kalman_ray_trace(x, pos, Cbn, ray, DTM, cellsize));
 kalman = unscentedKalmanFilter(f,h,x);
 
 kalman.Alpha = kalman_alpha;
-kalman.ProcessNoise = process_noise * dt_lidar;
+kalman.ProcessNoise = process_noise * dt;
 kalman.MeasurementNoise = measurement_noise;
 kalman.StateCovariance = kalman_P;
+
 
 while (~feof(F_IMU))
     pr_count=imu_data(1);
@@ -116,33 +117,30 @@ while (~feof(F_IMU))
     Phi(4:6,10:12) = Cbn*dt;
     Phi(7:9,13:15) = -Cbn*dt;
     
-    Q = kalman.ProcessNoise;
-    P = kalman.StateCovariance;
-    x = kalman.State;
     
     % Linear update - can use EKF for speed
-    [x, P] = matlabshared.tracking.internal.EKFPredictorAdditive.predict( ...
-        Q, x, P, f, df, Phi);
+    P1 = Phi*kalman.StateCovariance*Phi' + kalman.ProcessNoise;
+    x1 = f(kalman.State,Phi);
     
-    kalman.State = x;
-    kalman.StateCovariance = P;
+    kalman.State = x1;
+    kalman.StateCovariance = P1;
     
     % Effective LIDAR rate is dt/dt_lidar of IMU rate.    
     if(mod(pr_count, dt/dt_lidar) == 0)
         % LIDAR available
             x = correct(kalman, lidar, pos, Cbn, ray);
             kalman.State = zeros(size(x));
-    end
+    
     
     % Correct the navigation solution and reset the error state
     pos = pos-x(1:3);
     vel_n = vel_n-x(4:6);
-    Cbn = euler2dcm_v000(x(7:9))*Cbn;
+    Cbn = Cbn*euler2dcm_v000(x(7:9));
     att = dcm2euler_v000(Cbn);
     acc_bias = acc_bias+x(10:12);
     gyro_drift = gyro_drift+x(13:15);
     kalman.State = zeros(size(x));
-    
+    end
     % IMU step
     [Cbn, vel_n, pos] = ...
         strapdown_pln_dcm_v000(Cbn, vel_n, pos, imu(1:3), imu(4:6), g, dt, 0);
