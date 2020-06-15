@@ -7,7 +7,7 @@ angles = ray_angles(:)';
 
 rays = [zeros(1, length(angles)); ...
         sin(angles); ...
-        cos(angles)];
+        -cos(angles)];
 
 end
 

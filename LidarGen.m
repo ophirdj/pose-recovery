@@ -17,10 +17,11 @@ while (~feof(F_TRU))
     pr_coun = true_val(1);
     pos = true_val(2:4);
     att = true_val(8:10);
-    % Look down
-    Cbn = [0 1 0; 1 0 0; 0 0 -1] * euler2dcm_v000(att);
+    Cbn = euler2dcm_v000(att);
     
-    rho = CalcRayDistances(pos, Cbn, rays(:,1+mod(pr_coun,size(rays,2))), DTM, cellsize);
+    ray = rays(:,1+mod(pr_coun,size(rays,2)));
+    
+    rho = CalcRayDistances(pos, Cbn, ray, DTM, cellsize);
     
     if any(rho==inf)
         fprintf('BAD LIDAR\n');
@@ -28,7 +29,7 @@ while (~feof(F_TRU))
         return;
     end
     
-    fwrite(F_LIDAR,[pr_coun;rho],'double');
+    fwrite(F_LIDAR,[pr_coun;rho;ray(:)],'double');
     
     true_val = fread(F_TRU, 10, 'double');
 end

@@ -47,12 +47,12 @@ F_PRV=fopen(out_prv,'wb');
 % Ignore first record - junk
 fread(F_IMU,7,'double');
 fread(F_TRU, 10, 'double');
-fread(F_LIDAR,2,'double');
+fread(F_LIDAR,5,'double');
 
 % Read navigation, IMU, and LIDAR data
 imu_data=fread(F_IMU,7,'double');
 true_val = fread(F_TRU, 10, 'double');
-lidar_data=fread(F_LIDAR,2,'double');
+lidar_data=fread(F_LIDAR,5,'double');
 
 
 % Assume we know true initial position, velocity, and orientation
@@ -64,16 +64,13 @@ Cbn = euler2dcm_v000(att);
 acc_bias = [0 0 0]';
 gyro_drift = [0 0 0]';
 
-% LIDAR  model
-rays = GenerateRays(ray_angles);
-
 
 % Kalman filter initialization
 x = zeros(15,1);
 
 f = @(x,Phi)(Phi*x);
 df = @(x,Phi)(Phi);
-h = @(x, pos, Cbn, pr_count)(kalman_ray_trace(x, pos, Cbn, pr_count, rays, DTM, cellsize));
+h = @(x, pos, Cbn, ray)(kalman_ray_trace(x, pos, Cbn, ray, DTM, cellsize));
 
 kalman = unscentedKalmanFilter(f,h,x);
 
@@ -85,7 +82,8 @@ kalman.StateCovariance = kalman_P;
 while (~feof(F_IMU))
     pr_count=imu_data(1);
     imu=imu_data(2:7)-[acc_bias;gyro_drift];
-    lidar=lidar_data(2:end);
+    lidar=lidar_data(2);
+    ray=lidar_data(3:5);
     
     steps = pr_count-1;
 
@@ -100,8 +98,7 @@ while (~feof(F_IMU))
     att_err = dcm2euler_v000(euler2dcm_v000(true_val(8:10))*Cbn');
 
     % Calculate LIDAR error
-    lidar_projected = CalcRayDistances(pos, [0 1 0; 1 0 0; 0 0 -1] * Cbn, ...
-        rays(:,1+mod(pr_count,size(rays,2))), DTM, cellsize)';
+    lidar_projected = CalcRayDistances(pos, Cbn, ray, DTM, cellsize)';
     lidar_err = lidar_projected-lidar;
     lidar_err_mean = mean(lidar_err(~isnan(lidar_err)));
     lidar_err_num_valid = sum(~isnan(lidar_err));
@@ -133,7 +130,7 @@ while (~feof(F_IMU))
     % Effective LIDAR rate is dt/dt_lidar of IMU rate.    
     if(mod(pr_count, dt/dt_lidar) == 0)
         % LIDAR available
-            x = correct(kalman, lidar, pos, Cbn, pr_count);
+            x = correct(kalman, lidar, pos, Cbn, ray);
             kalman.State = zeros(size(x));
     end
     
@@ -165,7 +162,7 @@ while (~feof(F_IMU))
     % Read next records
     imu_data=fread(F_IMU,7,'double');
     true_val = fread(F_TRU, 10, 'double');
-    lidar_data=fread(F_LIDAR,2,'double');
+    lidar_data=fread(F_LIDAR,5,'double');
 end
 
 % Write result matrices
@@ -190,10 +187,9 @@ kalman_plot(out_prv);
 end
 
 %% Supporting functions
-function [rho] = kalman_ray_trace(x, pos, Cbn, pr_count, rays, DTM, cellsize)
+function [rho] = kalman_ray_trace(x, pos, Cbn, ray, DTM, cellsize)
     P = pos - x(1:3);
-    R = [0 1 0; 1 0 0; 0 0 -1] * euler2dcm_v000(x(7:9)) * Cbn;
-    ray = rays(:,1 + mod(pr_count,size(rays,2)));
+    R = euler2dcm_v000(x(7:9)) * Cbn;
     
     rho = CalcRayDistances(P, R, ray, DTM, cellsize);
 end

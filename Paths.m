@@ -1,3 +1,4 @@
+addpath(genpath([pwd() '\..\MRepo\']));
 dir = 'C:\Users\Ophir\matlab_workspace\trajectories\';
 dtm_load();
 
@@ -117,28 +118,52 @@ dtm_load();
 
 %% Line_100_1
 freq_Hz = 100;
-ray_angles = -pi/6:pi/18:pi/6;
-ini_pos = [4700 4700 1500]';
-ini_vel = [10 0 0]';
+ray_angles = [-pi/6:pi/180:pi/6 pi/6-pi/180:-pi/180:-pi/6+pi/180];
+ini_pos = [2000 4600 1500]';
+ini_vel = [0 -10 0]';
 mot_def = repmat([3 0 0 0 0 1], [18000 1]);
 PATH = [dir 'Line_100_1\'];
 if ~PathGenAll(PATH, mot_def, ini_pos, ray_angles, freq_Hz, DTM, cellsize, ini_vel)
     fprintf('Error generating path\n');
 else
     fprintf('Done %s\n', 'Line_100_1\');
-end 
-%% Circle_100_1
+end
+%% Line_100_2
 freq_Hz = 100;
-ray_angles = -pi/6:pi/18:pi/6;
-ini_pos = [4500 4500 1500]';
+ray_angles = [-pi/6:pi/180:pi/6 pi/6-pi/180:-pi/180:-pi/6+pi/180];
+ini_pos = [2000 4600 1500]';
 ini_vel = [10 0 0]';
-mot_def = [6 pi/16 0 0 0 5000];
-PATH = [dir 'Circle_100_1\'];
+mot_def = repmat([3 0 0 0 0 1], [18000 1]);
+PATH = [dir 'Line_100_2\'];
 if ~PathGenAll(PATH, mot_def, ini_pos, ray_angles, freq_Hz, DTM, cellsize, ini_vel)
     fprintf('Error generating path\n');
 else
-    fprintf('Done %s\n', 'Line_100_1\');
-end 
+    fprintf('Done %s\n', 'Line_100_2\');
+end
+%% Line_100_3
+freq_Hz = 100;
+ray_angles = [-pi/6:pi/180:pi/6 pi/6-pi/180:-pi/180:-pi/6+pi/180];
+ini_pos = [8000 9500 1500]';
+ini_vel = [0 -10 0]';
+mot_def = repmat([3 0 0 0 0 1], [18000 1]);
+PATH = [dir 'Line_100_3\'];
+if ~PathGenAll(PATH, mot_def, ini_pos, ray_angles, freq_Hz, DTM, cellsize, ini_vel)
+    fprintf('Error generating path\n');
+else
+    fprintf('Done %s\n', 'Line_100_3\');
+end
+% %% Circle_100_1
+% freq_Hz = 100;
+ray_angles = [-pi/6:pi/180:pi/6 pi/6-pi/180:-pi/180:-pi/6+pi/180];
+% ini_pos = [4500 4500 1500]';
+% ini_vel = [10 0 0]';
+% mot_def = [6 pi/16 0 0 0 5000];
+% PATH = [dir 'Circle_100_1\'];
+% if ~PathGenAll(PATH, mot_def, ini_pos, ray_angles, freq_Hz, DTM, cellsize, ini_vel)
+%     fprintf('Error generating path\n');
+% else
+%     fprintf('Done %s\n', 'Line_100_1\');
+% end 
 
 % %% Circle2_10_1
 % freq_Hz = 10;
