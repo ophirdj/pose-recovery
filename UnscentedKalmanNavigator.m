@@ -120,7 +120,7 @@ while (~feof(F_IMU))
     
     % Linear update - can use EKF for speed
     P1 = Phi*kalman.StateCovariance*Phi' + kalman.ProcessNoise;
-    x1 = f(kalman.State,Phi);
+    x1 = Phi*kalman.State;
     
     kalman.State = x1;
     kalman.StateCovariance = P1;
@@ -128,18 +128,16 @@ while (~feof(F_IMU))
     % Effective LIDAR rate is dt/dt_lidar of IMU rate.    
     if(mod(pr_count, dt/dt_lidar) == 0)
         % LIDAR available
-            x = correct(kalman, lidar, pos, Cbn, ray);
-            kalman.State = zeros(size(x));
+        x = correct(kalman, lidar, pos, Cbn, ray);
+        kalman.State = zeros(size(x));
     
-    
-    % Correct the navigation solution and reset the error state
-    pos = pos-x(1:3);
-    vel_n = vel_n-x(4:6);
-    Cbn = Cbn*euler2dcm_v000(x(7:9));
-    att = dcm2euler_v000(Cbn);
-    acc_bias = acc_bias+x(10:12);
-    gyro_drift = gyro_drift+x(13:15);
-    kalman.State = zeros(size(x));
+        % Correct the navigation solution and reset the error state
+        pos = pos-x(1:3);
+        vel_n = vel_n-x(4:6);
+        Cbn = Cbn*euler2dcm_v000(x(7:9)*1e-3);
+        att = dcm2euler_v000(Cbn);
+        acc_bias = acc_bias+x(10:12);
+        gyro_drift = gyro_drift+x(13:15)*1e-3;
     end
     % IMU step
     [Cbn, vel_n, pos] = ...
@@ -187,7 +185,7 @@ end
 %% Supporting functions
 function [rho] = kalman_ray_trace(x, pos, Cbn, ray, DTM, cellsize)
     P = pos - x(1:3);
-    R = euler2dcm_v000(x(7:9)) * Cbn;
+    R = Cbn * euler2dcm_v000(x(7:9)*1e-3);
     
     rho = CalcRayDistances(P, R, ray, DTM, cellsize);
 end
