@@ -117,10 +117,16 @@ while (~feof(F_IMU))
     Phi(4:6,10:12) = Cbn*dt;
     Phi(7:9,13:15) = -Cbn*dt;
     
+    % Scale attitude and drift from mrad to rad
+    x0 = kalman.State;
+    x0([7:9 13:15]) = x0([7:9 13:15])*1e-3;
     
     % Linear update - can use EKF for speed
     P1 = Phi*kalman.StateCovariance*Phi' + kalman.ProcessNoise;
-    x1 = Phi*kalman.State;
+    x1 = Phi*x0;
+    
+    % Scale attitude and drift from rad to mrad
+    x1([7:9 13:15]) = x1([7:9 13:15])*1e3;
     
     kalman.State = x1;
     kalman.StateCovariance = P1;

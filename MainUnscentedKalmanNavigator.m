@@ -17,7 +17,7 @@ RES_FILENAME = 'res_unscented.bin';
 PRV_FILENAME = 'prv_unscented.bin';
 
 show_only = 2;
-sim_len = 6000;
+sim_len = 18000;
 
 scenarios = {};
 scenario_names = {};
@@ -67,15 +67,15 @@ for k = 1:length(PATHS)
 %     end
 %     
 %     % Bias & drift
-%     for accelerometer_bias = [0 1e-2 1e-1 1e0 1e1 1e2]
-%         for gyro_drift = [0 1e-3 5e-3 1e-2 5e-2 1e-1 5e-1 1e0]
+%     for accelerometer_bias = [1e-1] ...[0 1e-2 1e-1 1e0 1e1 1e2]
+%         for gyro_drift = [0] ...[0 1e-3 5e-3 1e-2 5e-2 1e-1 5e-1 1e0]
 %             scenario_names{end+1} = sprintf('%s %.0d %.0d', 'Bias/drift', accelerometer_bias, gyro_drift);
 %             logs{end+1} = F_LOG;
 %             dir = [PATH sprintf('bd_%.0d_%.0d/', accelerometer_bias, gyro_drift)];
 %             scenarios{end+1} = @()...
 %             UnscentedKalmanNavigator([PATH 'mnav.bin'], [dir 'eimu.bin'], [PATH 'mlidar.bin'], ...
 %         [PATH 'meta.bin'], [dir RES_FILENAME], [dir ERR_FILENAME], [dir PRV_FILENAME], ...
-%         DTM, Q, 1e-6, 1e-3, P, sim_len, show_only);
+%         DTM, Q, 1e-9, 1e-2, P, sim_len, show_only);
 %         end
 %     end
 %     
