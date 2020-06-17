@@ -1,12 +1,13 @@
 function [success, steps] = UnscentedKalmanNavigator( in_mnav, in_mimu, in_mlidar, ...
     in_meta, out_res, out_err, out_prv, DTM, ...
-    process_noise, measurement_noise, kalman_alpha, kalman_P, sim_len, show_only)
+    process_noise, measurement_noise, kalman_alpha, kalman_P, ...
+    accelerometer_bias_m_per_sec2, gyro_drift_mrad_per_sec2, sim_len, show_only)
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
-if nargin < 13
+if nargin < 15
     sim_len = 0;
 end
-if nargin < 14
+if nargin < 16
     show_only = 0;
 end
 
@@ -18,6 +19,8 @@ n_rays = fread(F_META, 1, 'double');
 ray_angles = fread(F_META, n_rays, 'double');
 nav_len = fread(F_META, 1, 'double');
 fclose(F_META);
+
+imu_bias = [accelerometer_bias_m_per_sec2*dt, gyro_drift_mrad_per_sec2*1e-3*dt];
 
 if ~size(nav_len,1)
     nav_len = sim_len;
@@ -82,7 +85,7 @@ kalman.StateCovariance = kalman_P;
 
 while (~feof(F_IMU))
     pr_count=imu_data(1);
-    imu=imu_data(2:7)-[acc_bias;gyro_drift];
+    imu=imu_data(2:7)+imu_bias(:)-[acc_bias;gyro_drift];
     lidar=lidar_data(2);
     ray=lidar_data(3:5);
     
@@ -109,7 +112,7 @@ while (~feof(F_IMU))
     o_res(:, pr_count) = [pr_count;pos; att; Cbn'*vel_n];
 
     % Write private data
-    o_prv(:, pr_count) = [x(:); diag(kalman.StateCovariance)];
+    o_prv(:, pr_count) = [x(1:9); acc_bias(:)*freq_Hz; gyro_drift(:)*freq_Hz; diag(kalman.StateCovariance)];
 
     Phi = eye(length(x));
     Phi(1:3,4:6) = eye(3)*dt;
@@ -121,9 +124,11 @@ while (~feof(F_IMU))
     x0 = kalman.State;
     x0([7:9 13:15]) = x0([7:9 13:15])*1e-3;
     
+    P0 = kalman.StateCovariance;
+    
     % Linear update - can use EKF for speed
-    P1 = Phi*kalman.StateCovariance*Phi' + kalman.ProcessNoise;
     x1 = Phi*x0;
+    P1 = Phi*P0*Phi' + kalman.ProcessNoise;
     
     % Scale attitude and drift from rad to mrad
     x1([7:9 13:15]) = x1([7:9 13:15])*1e3;
@@ -145,6 +150,12 @@ while (~feof(F_IMU))
         acc_bias = acc_bias+x(10:12);
         gyro_drift = gyro_drift+x(13:15)*1e-3;
     end
+    
+    if(mod(pr_count, 1000) == 0)
+        % Cancel any numerical errors to make sure covariance stays positive-semidefinite
+        kalman.StateCovariance = triu(P1)+triu(P1)'-diag(diag(P1));
+    end
+    
     % IMU step
     [Cbn, vel_n, pos] = ...
         strapdown_pln_dcm_v000(Cbn, vel_n, pos, imu(1:3), imu(4:6), g, dt, 0);

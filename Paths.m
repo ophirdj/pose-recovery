@@ -2,159 +2,26 @@ addpath(genpath([pwd() '\..\MRepo\']));
 dir = 'C:\Users\Ophir\matlab_workspace\trajectories\';
 dtm_load();
 
-% %% Path_1_30_20
-% freq_Hz = 30;
-% n_rays = 20;
-% span_angle = pi/4;
-% ini_pos = [4500 4500 1000]';
-% mot_def = [2 0 0 0 100 1;
-%             6 pi/6 0 0 0 10;
-%             6 0 0 0 0 1;
-%             3 0 0 0 100 20;
-%            ];
-% PATH = [dir 'Path_1_30_20\'];
-% if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
-%     fprintf('Error generating path\n');
-% else
-%     fprintf('Done %s\n', 'Path_1_30_20\');
-% end
-% 
-% %% Path_1_100_20
-% freq_Hz = 100;
-% n_rays = 20;
-% span_angle = pi/4;
-% ini_pos = [4500 4500 1000]';
-% mot_def = [2 0 0 0 100 1;
-%             6 pi/6 0 0 0 10;
-%             6 0 0 0 0 1;
-%             3 0 0 0 100 20;
-%            ];
-% PATH = [dir 'Path_1_100_20\'];
-% if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
-%     fprintf('Error generating path\n');
-% else
-%     fprintf('Done %s\n', 'Path_1_100_20\');
-% end
-% 
-% %% Path_2_300_20
-% % freq_Hz = 30;
-% % n_rays = 20;
-% % span_angle = pi/4;
-% % ini_pos = [3500 1500 1000]';
-% % mot_def = [2 0 0 0 100 1;
-% %             6 pi/6 0 0 0 10;
-% %             6 0 0 0 0 1;
-% %             3 0 0 0 100 4;
-% %             6 -pi/6 0 0 0 8;
-% %             6 0 0 0 0 1;
-% %             6 -pi/6 0 0 0 8;
-% %             6 0 0 0 0 1;
-% %             6 pi/8 0 0 0 5;
-% %             6 0 0 0 0 1;
-% %             3 0 0 0 100 10;
-% %            ];
-% % PATH = [dir 'Path_2_30_20\'];
-% % if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
-% %     fprintf('Error generating path\n');
-% % else
-% %     fprintf('Done %s\n', 'Path_2_30_20\');
-% % end
-% 
-% %% Path_2_100_20
-% freq_Hz = 100;
-% n_rays = 20;
-% span_angle = pi/4;
-% ini_pos = [3500 1500 1000]';
-% mot_def = [2 0 0 0 100 1;
-%             6 pi/6 0 0 0 10;
-%             6 0 0 0 0 1;
-%             3 0 0 0 100 4;
-%             6 -pi/6 0 0 0 8;
-%             6 0 0 0 0 1;
-%             6 -pi/6 0 0 0 8;
-%             6 0 0 0 0 1;
-%             6 pi/8 0 0 0 5;
-%             6 0 0 0 0 1;
-%             3 0 0 0 100 10;
-%            ];
-% PATH = [dir 'Path_2_100_20\'];
-% if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
-%     fprintf('Error generating path\n');
-% else
-%     fprintf('Done %s\n', 'Path_2_100_20\');
-% end
-% 
-% %% Circle_30_20
-% % freq_Hz = 30;
-% % n_rays = 20;
-% % span_angle = pi/4;
-% % ini_pos = [4500 4500 1500]';
-% % mot_def = [2 0 0 0 100 1;
-% %             6 pi/8 0 0 0 50;
-% %             6 0 0 0 0 1;
-% %            ];
-% % PATH = [dir 'Circle_30_20\'];
-% % if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
-% %     fprintf('Error generating path\n');
-% % else
-% %     fprintf('Done %s\n', 'Circle_30_20\');
-% % end
-% 
-% %% Circle_100_20
-% freq_Hz = 100;
-% n_rays = 20;
-% span_angle = pi/4;
-% ini_pos = [4500 4500 1500]';
-% mot_def = [2 0 0 0 100 1;
-%             6 pi/8 0 0 0 50;
-%             6 0 0 0 0 1;
-%            ];
-% PATH = [dir 'Circle_100_20\'];
-% if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
-%     fprintf('Error generating path\n');
-% else
-%     fprintf('Done %s\n', 'Circle_100_20\');
-% end
-
-%% Line_100_1
-freq_Hz = 100;
-ray_angles = [-pi/6:pi/180:pi/6 pi/6-pi/180:-pi/180:-pi/6+pi/180];
-ini_pos = [2000 4600 1500]';
-ini_vel = [0 -10 0]';
-mot_def = repmat([3 0 0 0 0 1], [18000 1]);
-PATH = [dir 'Line_100_1\'];
-if ~PathGenAll(PATH, mot_def, ini_pos, ray_angles, freq_Hz, DTM, cellsize, ini_vel)
-    fprintf('Error generating path\n');
-else
-    fprintf('Done %s\n', 'Line_100_1\');
-end
-%% Line_100_2
-freq_Hz = 100;
-ray_angles = [-pi/6:pi/180:pi/6 pi/6-pi/180:-pi/180:-pi/6+pi/180];
-ini_pos = [2000 4600 1500]';
-ini_vel = [10 0 0]';
-mot_def = repmat([3 0 0 0 0 1], [18000 1]);
-PATH = [dir 'Line_100_2\'];
-if ~PathGenAll(PATH, mot_def, ini_pos, ray_angles, freq_Hz, DTM, cellsize, ini_vel)
-    fprintf('Error generating path\n');
-else
-    fprintf('Done %s\n', 'Line_100_2\');
-end
-%% Line_100_3
-freq_Hz = 100;
-ray_angles = [-pi/6:pi/180:pi/6 pi/6-pi/180:-pi/180:-pi/6+pi/180];
-ini_pos = [8000 9500 1500]';
-ini_vel = [0 -10 0]';
-mot_def = repmat([3 0 0 0 0 1], [18000 1]);
-PATH = [dir 'Line_100_3\'];
-if ~PathGenAll(PATH, mot_def, ini_pos, ray_angles, freq_Hz, DTM, cellsize, ini_vel)
-    fprintf('Error generating path\n');
-else
-    fprintf('Done %s\n', 'Line_100_3\');
+%% constant_velocity
+for n=1:10
+    while 1
+        name = sprintf('constant_velocity_%d', n);
+        sim_time_secs = 120;
+        ini_pos = [2000 + randi(5000); ...
+                   2000 + randi(5000); ...
+                   1500 + randi(1000)];
+        ini_vel = [5 * rand(); ...
+                   5 * rand(); ...
+                   1 * rand()];
+        if generate_line(ini_pos, ini_vel, sim_time_secs, name, dir, DTM, cellsize)
+            fprintf('%s [Done]\n', name);
+            break;
+        end
+    end
 end
 % %% Circle_100_1
 % freq_Hz = 100;
-ray_angles = [-pi/6:pi/180:pi/6 pi/6-pi/180:-pi/180:-pi/6+pi/180];
+% ray_angles = [-pi/6:pi/180:pi/6 pi/6-pi/180:-pi/180:-pi/6+pi/180];
 % ini_pos = [4500 4500 1500]';
 % ini_vel = [10 0 0]';
 % mot_def = [6 pi/16 0 0 0 5000];
@@ -163,77 +30,14 @@ ray_angles = [-pi/6:pi/180:pi/6 pi/6-pi/180:-pi/180:-pi/6+pi/180];
 %     fprintf('Error generating path\n');
 % else
 %     fprintf('Done %s\n', 'Line_100_1\');
-% end 
-
-% %% Circle2_10_1
-% freq_Hz = 10;
-% n_rays = 1;
-% span_angle = pi/8;
-% ini_pos = [4500 4500 1500]';
-% mot_def = [2 0 0 0 100 1;
-%             6 pi/16 0 0 0 5000;
-%             6 0 0 0 0 1;
-%            ];
-% PATH = [dir 'Circle2_10_1\'];
-% if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize)
-%     fprintf('Error generating path\n');
-% else
-%     fprintf('Done %s\n', 'Circle2_10_1\');
 % end
 
-%% Curve_30_20
-% freq_Hz = 30;
-% n_rays = 20;
-% span_angle = pi/4;
-% ini_pos = [3500 1500 1000]';
-% mot_def = [2 0 0 0 100 1;
-%             6 pi/6 0 0 0 10;
-%             6 0 0 0 0 1;
-%             3 0 0 0 100 4;
-%             6 -pi/6 0 0 0 8;
-%             6 0 0 0 0 1;
-%             6 -pi/6 0 0 0 8;
-%             6 0 0 0 0 1;
-%             6 pi/8 0 0 0 5;
-%             6 0 0 0 0 1;
-%             2 0 0 0 100 10;
-%             1 0 0 0 10 10;
-%             6 pi/6 0 0 0 10;
-%             6 0 0 0 0 1;
-%             3 0 0 0 100 4;
-%            ];
-% PATH = [dir 'Curve_30_20\'];
-% if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
-%     fprintf('Error generating path\n');
-% else
-%     fprintf('Done %s\n', 'Curve_30_20\');
-% end
 
-% %% Curve_100_20
-% freq_Hz = 100;
-% n_rays = 20;
-% span_angle = pi/4;
-% ini_pos = [3500 1500 1000]';
-% mot_def = [2 0 0 0 100 1;
-%             6 pi/6 0 0 0 10;
-%             6 0 0 0 0 1;
-%             3 0 0 0 100 4;
-%             6 -pi/6 0 0 0 8;
-%             6 0 0 0 0 1;
-%             6 -pi/6 0 0 0 8;
-%             6 0 0 0 0 1;
-%             6 pi/8 0 0 0 5;
-%             6 0 0 0 0 1;
-%             2 0 0 0 100 10;
-%             1 0 0 0 10 10;
-%             6 pi/6 0 0 0 10;
-%             6 0 0 0 0 1;
-%             3 0 0 0 100 4;
-%            ];
-% PATH = [dir 'Curve_100_20\'];
-% if ~PathGenAll(PATH, mot_def, ini_pos, n_rays, span_angle, freq_Hz, DTM, cellsize);
-%     fprintf('Error generating path\n');
-% else
-%     fprintf('Done %s\n', 'Curve_100_20\');
-% end
-
+%% Supporting functions
+function [success] = generate_line(ini_pos, ini_vel, sim_time_secs, name, dir, DTM, cellsize)
+    freq_Hz = 100;
+    ray_angles = [-pi/6:pi/180:pi/6 pi/6-pi/180:-pi/180:-pi/6+pi/180];
+    mot_def = repmat([3 0 0 0 0 1], [sim_time_secs*freq_Hz 1]);
+    PATH = sprintf('%s%s\\', dir, name);
+    success = PathGenAll(PATH, mot_def, ini_pos, ray_angles, freq_Hz, DTM, cellsize, ini_vel);
+end

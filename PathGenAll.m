@@ -33,21 +33,7 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, 
 %                 continue;
             end
             gen_imu_err_v000(dir_name, dir, ...
-                accelerometer_variance, gyro_variance, 0, 0);
-        end
-    end
-    
-    % Bias & drift
-    for accelerometer_bias = [0 1e-2 1e-1 1e0 1e1 1e2]
-        for gyro_drift = [0 1e-3 5e-3 1e-2 5e-2 1e-1 5e-1 1e0]
-            dir = [dir_name sprintf('bd_%.0d_%.0d/', accelerometer_bias, gyro_drift)];
-            if ~isdir(dir)
-                mkdir(dir);
-            elseif isdir(dir)
-%                 continue;
-            end
-            gen_imu_err_v000(dir_name, dir, 0, 0, ...
-                accelerometer_bias / (60 * freq_Hz), gyro_drift / (60 * freq_Hz));
+                accelerometer_variance, gyro_variance);
         end
     end
 
@@ -104,15 +90,14 @@ function [] = gen_ground_truth(dir_name, mot_def, ini_pos, freq_Hz, vel)
 end
 
 function [] = gen_imu_err_v000(nav_dir, dir_name, ...
-                               accelerometer_variance, gyro_variance, ...
-                               accelerometer_bias, gyro_drift)
+                               accelerometer_variance, gyro_variance)
     F_MIMU = fopen([nav_dir 'mimu.bin'], 'rb');
     F_EIMU = fopen([dir_name 'eimu.bin'], 'wb');
     imu_data = fread(F_MIMU,7,'double');
     while (~feof(F_MIMU))
         pr_count = imu_data(1);
-        accelerometer = imu_data(2:4) + accelerometer_bias + randn(3,1)*accelerometer_variance;
-        gyroscope = imu_data(5:7) + gyro_drift + randn(3,1)*gyro_variance;
+        accelerometer = imu_data(2:4) + randn(3,1)*accelerometer_variance;
+        gyroscope = imu_data(5:7) + randn(3,1)*gyro_variance;
         fwrite(F_EIMU, [pr_count;accelerometer(:);gyroscope(:)], 'double');
         imu_data = fread(F_MIMU,7,'double');
     end

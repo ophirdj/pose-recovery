@@ -15,16 +15,16 @@ xlabel('Frame Number');
 ylabel('Position Correction m');
 hold on;
 grid;
-plot(cumsum(x(1:3,:))');
+plot(x(1:3,:)');
 legend('X', 'Y', 'Z');
 
 subplot(2,3,2);
 title('Attitude Correction Over Time');
 xlabel('Frame Number');
-ylabel('Attitude Correction mrad');
+ylabel('Attitude Correction rad');
 hold on;
 grid;
-plot(cumsum(x(7:9,:))');
+plot(x(7:9,:)');
 legend('yaw', 'pitch', 'roll');
 
 subplot(2,3,3);
@@ -33,25 +33,25 @@ xlabel('Frame Number');
 ylabel('Velocity Correction (m/sec)');
 hold on;
 grid;
-plot(cumsum(x(4:6,:))');
+plot(x(4:6,:)');
 legend('X', 'Y', 'Z');
 
 subplot(2,3,4);
 title('Bias Correction Over Time');
 xlabel('Frame Number');
-ylabel('Accelerometer Bias Correction (m/sec)');
+ylabel('Accelerometer Bias Correction (m/sec2)');
 hold on;
 grid;
-plot(cumsum(x(10:12,:))');
+plot(x(10:12,:)');
 legend('X', 'Y', 'Z');
 
 subplot(2,3,5);
 title('Drift Correction Over Time');
 xlabel('Frame Number');
-ylabel('Gyroscope Drift Correction (mrad/sec)');
+ylabel('Gyroscope Drift Correction (rad/sec2)');
 hold on;
 grid;
-plot(cumsum(x(13:15,:))');
+plot(x(13:15,:)');
 legend('yaw', 'pitch', 'roll');
 
 figure;

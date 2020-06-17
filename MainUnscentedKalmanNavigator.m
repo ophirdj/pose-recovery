@@ -3,13 +3,7 @@ addpath(genpath([pwd() '\..\MRepo\']));
 dtm_load();
 
 PATHS = {...
-%         'C:\Users\Ophir\matlab_workspace\trajectories\Path_1_30_20\',...
-%         'C:\Users\Ophir\matlab_workspace\trajectories\Path_1_100_20\',...
-%         'C:\Users\Ophir\matlab_workspace\trajectories\Path_2_100_20\',...
-%         'C:\Users\Ophir\matlab_workspace\trajectories\Circle_100_20\',...
-%         'C:\Users\Ophir\matlab_workspace\trajectories\Circle_100_1\',...
-%         'C:\Users\Ophir\matlab_workspace\trajectories\Curve_100_20\',...
-        'C:\Users\Ophir\matlab_workspace\trajectories\Line_100_1\',...
+        'C:\Users\Ophir\matlab_workspace\trajectories\constant_velocity_1\',...
         };
     
 ERR_FILENAME = 'err_unscented.bin';
@@ -17,12 +11,15 @@ RES_FILENAME = 'res_unscented.bin';
 PRV_FILENAME = 'prv_unscented.bin';
 
 show_only = 2;
-sim_len = 18000;
+sim_len = 12000;
 
 scenarios = {};
 scenario_names = {};
 logs = {};
 ls = {};
+
+accelerometer_bias_m_per_sec2 = [1 0 0];
+gyro_drift_mrad_per_sec2 = [0 0 0];
 
 for k = 1:length(PATHS)
     PATH = PATHS{k};
@@ -51,7 +48,7 @@ for k = 1:length(PATHS)
     scenarios{end+1} = @()...
     UnscentedKalmanNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
         [PATH 'meta.bin'], [PATH RES_FILENAME], [PATH ERR_FILENAME], [PATH PRV_FILENAME], ...
-        DTM, Q, 1e-9, 1e-2, P, sim_len, show_only);
+        DTM, Q, 1e-9, 1e-2, P, accelerometer_bias_m_per_sec2, gyro_drift_mrad_per_sec2, sim_len, show_only);
     
 %     % IMU
 %     for linear_err = [0 1e-4 5e-4 1e-3 5e-3 1e-2 5e-2 1e-1 5e-1 1e0 5e0]
