@@ -18,7 +18,7 @@ scenario_names = {};
 logs = {};
 ls = {};
 
-accelerometer_bias_m_per_sec2 = [1 0 0];
+accelerometer_bias_m_per_sec2 = [0 0 0];
 gyro_drift_mrad_per_sec2 = [0 0 0];
 
 for k = 1:length(PATHS)
@@ -39,7 +39,7 @@ for k = 1:length(PATHS)
           1e-1 1e-1 1e-1                                             ... % vel
           (0.5*pi/180*1e3)^2 (0.5*pi/180*1e3)^2 (0.5*pi/180*1e3)^2   ... % att
           1e-4 1e-4 1e-4                                             ... % bias-acc
-          (10*pi/180/3600)^2 (10*pi/180/3600)^2 (10*pi/180/3600)^2   ... % bias-gyr
+          (10*pi/180/3600*1e3)^2 (10*pi/180/3600*1e3)^2 (10*pi/180/3600*1e3)^2   ... % bias-gyr
           ]);
     
     % Ground Truth
