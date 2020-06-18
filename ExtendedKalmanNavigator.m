@@ -181,7 +181,7 @@ end
 end
 %% Show results
 err_plot_nav(out_err,out_res,in_mnav,DTM,cellsize,success);
-kalman_plot(out_prv);
+kalman_plot(out_prv, in_meta);
 end
 
 %% Supporting functions

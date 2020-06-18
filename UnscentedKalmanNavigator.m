@@ -1,7 +1,7 @@
 function [success, steps] = UnscentedKalmanNavigator( in_mnav, in_mimu, in_mlidar, ...
     in_meta, out_res, out_err, out_prv, DTM, ...
     process_noise, measurement_noise, kalman_alpha, kalman_P, ...
-    accelerometer_bias_m_per_sec2, gyro_drift_mrad_per_sec2, sim_len, show_only)
+    accelerometer_bias_m_per_sec2, gyro_drift_rad_per_sec2, sim_len, show_only)
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
 if nargin < 15
@@ -20,7 +20,7 @@ ray_angles = fread(F_META, n_rays, 'double');
 nav_len = fread(F_META, 1, 'double');
 fclose(F_META);
 
-imu_bias = [accelerometer_bias_m_per_sec2*dt, gyro_drift_mrad_per_sec2*1e-3*dt];
+imu_bias = [accelerometer_bias_m_per_sec2*dt, gyro_drift_rad_per_sec2*dt];
 
 if ~size(nav_len,1)
     nav_len = sim_len;
@@ -71,9 +71,11 @@ gyro_drift = [0 0 0]';
 % Kalman filter initialization
 x = zeros(15,1);
 
+ATT_SCALE = 1e-3;
+
 f = @(x,Phi)(Phi*x);
 df = @(x,Phi)(Phi);
-h = @(x, pos, Cbn, ray)(kalman_ray_trace(x, pos, Cbn, ray, DTM, cellsize));
+h = @(x, pos, Cbn, ray)(kalman_ray_trace(x, pos, Cbn, ray, DTM, cellsize, ATT_SCALE));
 
 kalman = unscentedKalmanFilter(f,h,x);
 
@@ -120,18 +122,11 @@ while (~feof(F_IMU))
     Phi(4:6,10:12) = Cbn*dt;
     Phi(7:9,13:15) = -Cbn*dt;
     
-    % Scale attitude and drift from mrad to rad
-    x0 = kalman.State;
-    x0([7:9 13:15]) = x0([7:9 13:15])*1e-3;
-    
     P0 = kalman.StateCovariance;
     
     % Linear update - can use EKF for speed
-    x1 = Phi*x0;
+    x1 = Phi*kalman.State;
     P1 = Phi*P0*Phi' + kalman.ProcessNoise;
-    
-    % Scale attitude and drift from rad to mrad
-    x1([7:9 13:15]) = x1([7:9 13:15])*1e3;
     
     kalman.State = x1;
     kalman.StateCovariance = P1;
@@ -145,10 +140,10 @@ while (~feof(F_IMU))
         % Correct the navigation solution and reset the error state
         pos = pos-x(1:3);
         vel_n = vel_n-x(4:6);
-        Cbn = Cbn*euler2dcm_v000(x(7:9)*1e-3);
+        Cbn = Cbn*euler2dcm_v000(x(7:9)*ATT_SCALE);
         att = dcm2euler_v000(Cbn);
-        acc_bias = acc_bias+x(10:12);
-        gyro_drift = gyro_drift+x(13:15)*1e-3;
+%         acc_bias = acc_bias+x(10:12);
+        gyro_drift = gyro_drift+x(13:15)*ATT_SCALE;
     end
     
     if(mod(pr_count, 1000) == 0)
@@ -195,14 +190,14 @@ if show_only == 0
 end
 end
 %% Show results
-err_plot_nav(out_err,out_res,in_mnav,DTM,cellsize,success);
-kalman_plot(out_prv);
+err_plot_nav(out_err,out_res,in_mnav,in_meta,DTM,cellsize,success);
+kalman_plot(out_prv, in_meta);
 end
 
 %% Supporting functions
-function [rho] = kalman_ray_trace(x, pos, Cbn, ray, DTM, cellsize)
+function [rho] = kalman_ray_trace(x, pos, Cbn, ray, DTM, cellsize, ATT_SCALE)
     P = pos - x(1:3);
-    R = Cbn * euler2dcm_v000(x(7:9)*1e-3);
+    R = Cbn * euler2dcm_v000(x(7:9)*ATT_SCALE);
     
     rho = CalcRayDistances(P, R, ray, DTM, cellsize);
 end

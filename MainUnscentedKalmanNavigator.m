@@ -18,8 +18,8 @@ scenario_names = {};
 logs = {};
 ls = {};
 
-accelerometer_bias_m_per_sec2 = [0 0 0];
-gyro_drift_mrad_per_sec2 = [0 0 0];
+accelerometer_bias_m_per_sec2 = [0 0 0]; % X Y Z
+gyro_drift_rad_per_sec2 = [0 0 0]*pi/180; % yaw pitch roll
 
 for k = 1:length(PATHS)
     PATH = PATHS{k};
@@ -48,7 +48,7 @@ for k = 1:length(PATHS)
     scenarios{end+1} = @()...
     UnscentedKalmanNavigator([PATH 'mnav.bin'], [PATH 'mimu.bin'], [PATH 'mlidar.bin'], ...
         [PATH 'meta.bin'], [PATH RES_FILENAME], [PATH ERR_FILENAME], [PATH PRV_FILENAME], ...
-        DTM, Q, 1e-9, 1e-2, P, accelerometer_bias_m_per_sec2, gyro_drift_mrad_per_sec2, sim_len, show_only);
+        DTM, Q, 1e-9, 1e-2, P, accelerometer_bias_m_per_sec2, gyro_drift_rad_per_sec2, sim_len, show_only);
     
 %     % IMU
 %     for linear_err = [0 1e-4 5e-4 1e-3 5e-3 1e-2 5e-2 1e-1 5e-1 1e0 5e0]
