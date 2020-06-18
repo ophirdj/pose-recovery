@@ -11,8 +11,8 @@ x_start = margin;
 x_end = size(DTM, 2) * cellsize - margin;
 y_start = margin;
 y_end = size(DTM, 1) * cellsize - margin;
-z_start = 1500;
-z_end = 2500;
+z_start = 2500;
+z_end = 3500;
 
 %Velocity variance
 V_horiz = 5;
@@ -50,7 +50,7 @@ for n=1:10
         ini_vel = [V_horiz * rand(); ...
                    V_horiz * rand(); ...
                    V_vert * rand()];
-        bank = (pi/32 + pi/64 * rand()) * power(-1, randi(2));
+        bank = (pi/256 + pi/512 * rand()) * power(-1, randi(2));
         if constant_bank(ini_pos, ini_vel, bank, sim_time_secs, name, dir, DTM, cellsize)
             fprintf('%s [Done]\n', name);
             fail_cnt = 0;

@@ -142,7 +142,7 @@ while (~feof(F_IMU))
         vel_n = vel_n-x(4:6);
         Cbn = Cbn*euler2dcm_v000(x(7:9)*ATT_SCALE);
         att = dcm2euler_v000(Cbn);
-%         acc_bias = acc_bias+x(10:12);
+        acc_bias = acc_bias+x(10:12);
         gyro_drift = gyro_drift+x(13:15)*ATT_SCALE;
     end
     

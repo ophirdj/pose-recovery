@@ -2,7 +2,7 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, 
     %UNTITLED Summary of this function goes here
     %   Detailed explanation goes here
 
-    if ~isdir(dir_name)
+    if ~isfolder(dir_name)
         mkdir(dir_name);
     end
     
@@ -24,13 +24,11 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, 
     end
     
     %IMU
-    for accelerometer_variance = [0 1e-4 5e-4 1e-3 5e-3 1e-2 5e-2 1e-1 5e-1 1e0 5e0]
-        for gyro_variance = [0 1e-4 5e-4 1e-3 5e-3 1e-2]
+    for accelerometer_variance = [0 1e-2 1e-1 1e0 1e1 1e2] / freq_Hz
+        for gyro_variance = [0 1e-2 1e-1 1e0 1e1 1e2] * pi / 180 / freq_Hz
             dir = [dir_name sprintf('imu_%.0d_%.0d/', accelerometer_variance, gyro_variance)];
-            if ~isdir(dir)
+            if ~isfolder(dir)
                 mkdir(dir);
-            elseif isdir(dir)
-%                 continue;
             end
             gen_imu_err_v000(dir_name, dir, ...
                 accelerometer_variance, gyro_variance);
@@ -40,7 +38,7 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, 
     %DTM
     for dtm_err = [0 1e-2 1e-1 1e0 2e0 5e0 1e1]
         dir = [dir_name sprintf('dtm_%.0d/', dtm_err)];
-        if ~isdir(dir)
+        if ~isfolder(dir)
             mkdir(dir);
         end
         errDTM = DTM + dtm_err .* randn(size(DTM));
@@ -55,12 +53,12 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, 
     lidar = readbin_v000([dir_name 'mlidar.bin'],2);
     for lidar_err = [0 1e-4 1e-3 1e-2 5e-2 1e-1 5e-1 1e0 5e0 1e1]
         dir = [dir_name sprintf('lidar_%.0d/', lidar_err)];
-        if ~isdir(dir)
+        if ~isfolder(dir)
             mkdir(dir);
         end
         
         l = lidar(2:end,:);
-        le = l + lidar_err .* (2.* rand(size(l)) - 1);
+        le = l .* (100 + lidar_err .* (2.* rand(size(l)) - 1)) / 100;
         o = [lidar(1,:);le];
         
         F_LIDAR = fopen([dir 'mlidar.bin'], 'wb');
