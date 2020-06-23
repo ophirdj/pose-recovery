@@ -13,7 +13,7 @@ meta=readbin_v000(in_meta,1);
 freq_Hz = meta(1);
 time_series = repmat((1:size(x, 2))/freq_Hz, [3 1])';
 
-RAD2DEG = 180/pi;
+MRAD2DEG = 180/pi/1000;
 
 figure;
 subplot(2,3,1);
@@ -31,7 +31,7 @@ xlabel('Time (sec)');
 ylabel('Attitude Correction (deg)');
 hold on;
 grid;
-plot(time_series, cumsum(x(7:9,:))'*RAD2DEG);
+plot(time_series, cumsum(x(7:9,:))'*MRAD2DEG);
 legend('yaw', 'pitch', 'roll');
 
 subplot(2,3,3);
@@ -58,7 +58,7 @@ xlabel('Time (sec)');
 ylabel('Gyroscope Drift (deg/sec^2)');
 hold on;
 grid;
-plot(time_series, x(13:15,:)'*RAD2DEG);
+plot(time_series, x(13:15,:)'*MRAD2DEG);
 legend('yaw', 'pitch', 'roll');
 
 figure;
@@ -77,7 +77,7 @@ xlabel('Time (sec)');
 ylabel('deg');
 hold on;
 grid;
-plot(time_series, C_sqrt(7:9,:)'*RAD2DEG);
+plot(time_series, C_sqrt(7:9,:)'*MRAD2DEG);
 legend('yaw', 'pitch', 'roll');
 
 
@@ -105,7 +105,7 @@ xlabel('Time (sec)');
 ylabel('deg/sec^2');
 hold on;
 grid;
-plot(time_series, C_sqrt(10:12,:)'*RAD2DEG);
+plot(time_series, C_sqrt(10:12,:)'*MRAD2DEG);
 legend('yaw', 'pitch', 'roll');
 
 figure;

@@ -13,7 +13,8 @@ RAD2DEG = pi/180;
 
 [X, Y] = meshgrid((1:size(DTM, 2))*cellsize, (1:size(DTM, 1))*cellsize);
 
-figure;
+figure('Name','Trajectory');
+subplot(1,2,1);
 contour(X, Y, DTM);
 hold on;
 plot(res(2,:), res(3,:), 'bo');
@@ -26,7 +27,20 @@ xlabel('X offset (m)');
 ylabel('Y offset (m)');
 legend('Terrain', 'Recovered', 'Original');
 
-figure;
+subplot(1,2,2);
+contour(X, Y, DTM);
+hold on;
+quiver(tru(2,2:size(res, 2)+1), tru(3,2:size(res, 2)+1), ...
+    res(2,:)-tru(2,2:size(res, 2)+1), res(3,:)-tru(3,2:size(res, 2)+1), 0);
+grid;
+pbaspect([1 1 1]);
+daspect([1 1 1]);
+title('Difference between Recovered and Original Trajectories');
+xlabel('X offset (m)');
+ylabel('Y offset (m)');
+legend('Terrain', 'Difference');
+
+figure('Name','Error');
 subplot(2,3,1);
 plot(time_series, err(2,:));
 title('Error Over Time (X)');
@@ -68,17 +82,14 @@ hold on;
 grid;
 
 subplot(2,3,6);
-r = err(7,:);
-r(r < -6) = r(r < -6) + 2*pi;
-r(r > 6) = r(r > 6) + 2*pi;
-plot(time_series, r*RAD2DEG);
+plot(time_series, asin(sin(err(7,:)))*RAD2DEG);
 title('Error Over Time (Roll)');
 xlabel('Time (sec)');
 ylabel('Roll offset (deg)');
 hold on;
 grid;
 
-figure;
+figure('Name','Lidar');
 subplot(2,1,1);
 plot(time_series, err(8,:));
 title('Err LIDAR (All)');
@@ -102,7 +113,7 @@ fprintf('Mean Error y: %d\n', mean(abs(err(3,:))));
 fprintf('Mean Error z: %d\n', mean(abs(err(4,:))));
 fprintf('Mean Error yaw: %d\n', RAD2DEG*mean(abs(err(5,:))));
 fprintf('Mean Error pit: %d\n', RAD2DEG*mean(abs(err(6,:))));
-fprintf('Mean Error rol: %d\n', RAD2DEG*mean(abs(r)));
+fprintf('Mean Error rol: %d\n', RAD2DEG*mean(abs(asin(sin(err(7,:))))));
 
 x = sort(abs(err(2,:)));
 fprintf('90%% Error x: %d\n', x(floor(length(x)*9/10)));
@@ -119,7 +130,7 @@ fprintf('90%% Error yaw: %d\n', RAD2DEG*x(floor(length(x)*9/10)));
 x = sort(abs(err(6,:)));
 fprintf('90%% Error pit: %d\n', RAD2DEG*x(floor(length(x)*9/10)));
 
-x = sort(abs(r));
+x = sort(abs(asin(sin(err(7,:)))));
 fprintf('90%% Error rol: %d\n', RAD2DEG*x(floor(length(x)*9/10)));
 
 if success
