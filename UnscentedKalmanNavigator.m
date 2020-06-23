@@ -1,13 +1,15 @@
 function [success, steps] = UnscentedKalmanNavigator( in_mnav, in_mimu, in_mlidar, ...
     in_meta, out_res, out_err, out_prv, DTM, ...
     process_noise, measurement_noise, kalman_alpha, kalman_P, ...
-    accelerometer_bias_m_per_sec2, gyro_drift_rad_per_sec2, sim_len, show_only)
+    accelerometer_bias_m_per_sec2, gyro_drift_rad_per_sec2, ini_pos_err_m, ...
+    ini_vel_err_m_sec, ini_att_err_rad, ...
+    sim_len, show_only)
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
-if nargin < 15
+if nargin < 18
     sim_len = 0;
 end
-if nargin < 16
+if nargin < 19
     show_only = 0;
 end
 
@@ -20,7 +22,7 @@ ray_angles = fread(F_META, n_rays, 'double');
 nav_len = fread(F_META, 1, 'double');
 fclose(F_META);
 
-imu_bias = [accelerometer_bias_m_per_sec2*dt, gyro_drift_rad_per_sec2*dt];
+imu_bias = [accelerometer_bias_m_per_sec2, gyro_drift_rad_per_sec2];
 
 if ~size(nav_len,1)
     nav_len = sim_len;
@@ -59,9 +61,9 @@ lidar_data=fread(F_LIDAR,5,'double');
 
 
 % Assume we know true initial position, velocity, and orientation
-pos = true_val(2:4);
-vel_n = true_val(5:7);
-att = true_val(8:10);
+pos = true_val(2:4) + ini_pos_err_m(:);
+vel_n = true_val(5:7) + ini_vel_err_m_sec(:);
+att = true_val(8:10) + ini_att_err_rad(:);
 Cbn = euler2dcm_v000(att);
 
 acc_bias = [0 0 0]';
@@ -71,11 +73,9 @@ gyro_drift = [0 0 0]';
 % Kalman filter initialization
 x = zeros(15,1);
 
-ATT_SCALE = 1e-3;
-
 f = @(x,Phi)(Phi*x);
 df = @(x,Phi)(Phi);
-h = @(x, pos, Cbn, ray)(kalman_ray_trace(x, pos, Cbn, ray, DTM, cellsize, ATT_SCALE));
+h = @(x, pos, Cbn, ray)(kalman_ray_trace(x, pos, Cbn, ray, DTM, cellsize));
 
 kalman = unscentedKalmanFilter(f,h,x);
 
@@ -114,11 +114,17 @@ while (~feof(F_IMU))
     o_res(:, pr_count) = [pr_count;pos; att; Cbn'*vel_n];
 
     % Write private data
-    o_prv(:, pr_count) = [x(1:9); acc_bias(:)*freq_Hz; gyro_drift(:)*freq_Hz; diag(kalman.StateCovariance)];
+    o_prv(:, pr_count) = [x(1:9); acc_bias(:); gyro_drift(:); diag(kalman.StateCovariance)];
 
+    
+    % IMU step
+    [Cbn, vel_n, pos] = ...
+        strapdown_pln_dcm_v000(Cbn, vel_n, pos, imu(1:3), imu(4:6), g, dt, 0);
+    
+    
     Phi = eye(length(x));
     Phi(1:3,4:6) = eye(3)*dt;
-    Phi(4:6,7:9) = skew(Cbn*(imu(1:3)+[0 0 g]'));
+    Phi(4:6,7:9) = skew(Cbn*imu(1:3))*dt;
     Phi(4:6,10:12) = Cbn*dt;
     Phi(7:9,13:15) = -Cbn*dt;
     
@@ -140,20 +146,16 @@ while (~feof(F_IMU))
         % Correct the navigation solution and reset the error state
         pos = pos-x(1:3);
         vel_n = vel_n-x(4:6);
-        Cbn = Cbn*euler2dcm_v000(x(7:9)*ATT_SCALE);
+        Cbn = euler2dcm_v000(x(7:9))*Cbn;
         att = dcm2euler_v000(Cbn);
         acc_bias = acc_bias+x(10:12);
-        gyro_drift = gyro_drift+x(13:15)*ATT_SCALE;
+        gyro_drift = gyro_drift+x(13:15);
     end
     
     if(mod(pr_count, 1000) == 0)
         % Cancel any numerical errors to make sure covariance stays positive-semidefinite
         kalman.StateCovariance = triu(P1)+triu(P1)'-diag(diag(P1));
     end
-    
-    % IMU step
-    [Cbn, vel_n, pos] = ...
-        strapdown_pln_dcm_v000(Cbn, vel_n, pos, imu(1:3), imu(4:6), g, dt, 0);
     
     if any(abs(pos_err)>30)
         success = false;
@@ -195,9 +197,9 @@ kalman_plot(out_prv, in_meta);
 end
 
 %% Supporting functions
-function [rho] = kalman_ray_trace(x, pos, Cbn, ray, DTM, cellsize, ATT_SCALE)
+function [rho] = kalman_ray_trace(x, pos, Cbn, ray, DTM, cellsize)
     P = pos - x(1:3);
-    R = Cbn * euler2dcm_v000(x(7:9)*ATT_SCALE);
+    R = euler2dcm_v000(x(7:9)) * Cbn;
     
     rho = CalcRayDistances(P, R, ray, DTM, cellsize);
 end
