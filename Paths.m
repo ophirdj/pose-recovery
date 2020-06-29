@@ -3,7 +3,7 @@ dir = 'C:\Users\Ophir\matlab_workspace\trajectories\';
 dtm_load();
 
 % Limit path generation
-sim_time_secs = 180;
+sim_time_secs = 360;
 
 % Limit area of path generation
 margin = 3500;
@@ -15,8 +15,8 @@ z_start = 2500;
 z_end = 3500;
 
 %Velocity variance
-V_horiz = 5;
-V_vert = 1;
+V_horiz_m_sec = 5;
+V_vert_m_sec = 1;
 
 %% constant_velocity
 fail_cnt = 0;
@@ -26,9 +26,9 @@ for n=1:10
         ini_pos = [x_start + randi(x_end-x_start); ...
                    y_start + randi(y_end-y_start); ...
                    z_start + randi(z_end-z_start)];
-        vel = [V_horiz * rand(); ...
-                   V_horiz * rand(); ...
-                   V_vert * rand()];
+        vel = [V_horiz_m_sec * rand(); ...
+                   V_horiz_m_sec * rand(); ...
+                   V_vert_m_sec * rand()];
         if constant_velocity(ini_pos, vel, sim_time_secs, name, dir, DTM, cellsize)
             fprintf('%s [Done]\n', name);
             fail_cnt = 0;
@@ -47,9 +47,9 @@ for n=1:10
         ini_pos = [x_start + randi(x_end-x_start); ...
                    y_start + randi(y_end-y_start); ...
                    z_start + randi(z_end-z_start)];
-        ini_vel = [V_horiz * rand(); ...
-                   V_horiz * rand(); ...
-                   V_vert * rand()];
+        ini_vel = [V_horiz_m_sec * rand(); ...
+                   V_horiz_m_sec * rand(); ...
+                   V_vert_m_sec * rand()];
         bank = (pi/256 + pi/512 * rand()) * power(-1, randi(2));
         if constant_bank(ini_pos, ini_vel, bank, sim_time_secs, name, dir, DTM, cellsize)
             fprintf('%s [Done]\n', name);

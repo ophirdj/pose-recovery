@@ -2,6 +2,8 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, 
     %UNTITLED Summary of this function goes here
     %   Detailed explanation goes here
 
+    scenario_test_parameters();
+    
     if ~isfolder(dir_name)
         mkdir(dir_name);
     end
@@ -24,19 +26,19 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, 
     end
     
     %IMU
-    for accelerometer_variance = [0 1e-2 1e-1 1e0 1e1 1e2] / freq_Hz
-        for gyro_variance = [0 1e-2 1e-1 1e0 1e1 1e2] * pi / 180 / freq_Hz
+    for accelerometer_variance = accelerometer_variances_m_sec2
+        for gyro_variance = gyro_variances_deg_sec2
             dir = [dir_name sprintf('imu_%.0d_%.0d/', accelerometer_variance, gyro_variance)];
             if ~isfolder(dir)
                 mkdir(dir);
             end
             gen_imu_err_v000(dir_name, dir, ...
-                accelerometer_variance, gyro_variance);
+                accelerometer_variance, gyro_variance * pi / 180);
         end
     end
 
     %DTM
-    for dtm_err = [0 1e-2 1e-1 1e0 2e0 5e0 1e1]
+    for dtm_err = dtm_errs_m
         dir = [dir_name sprintf('dtm_%.0d/', dtm_err)];
         if ~isfolder(dir)
             mkdir(dir);
@@ -51,7 +53,7 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, 
     
     %LIDAR
     lidar = readbin_v000([dir_name 'mlidar.bin'],2);
-    for lidar_err = [0 1e-4 1e-3 1e-2 5e-2 1e-1 5e-1 1e0 5e0 1e1]
+    for lidar_err = lidar_errs_percent
         dir = [dir_name sprintf('lidar_%.0d/', lidar_err)];
         if ~isfolder(dir)
             mkdir(dir);

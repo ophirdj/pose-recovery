@@ -1,4 +1,4 @@
-function [success, steps] = UnscentedKalmanNavigator( in_mnav, in_mimu, in_mlidar, ...
+function [success, steps, figs] = UnscentedKalmanNavigator( in_mnav, in_mimu, in_mlidar, ...
     in_meta, out_res, out_err, out_prv, DTM, ...
     process_noise, measurement_noise, kalman_alpha, kalman_P, ...
     accelerometer_bias_m_per_sec2, gyro_drift_rad_per_sec2, ini_pos_err_m, ...
@@ -44,6 +44,7 @@ F_TRU=fopen(in_mnav,'rb');
 F_RES=fopen(out_res,'wb');
 F_ERR=fopen(out_err,'wb');
 F_PRV=fopen(out_prv,'wb');
+
 
 %Use constant scale for all observations
 [Rn, Re, g, sL, cL, WIE_E]=geoparam_v000([0 0 0]');
@@ -93,9 +94,9 @@ while (~feof(F_IMU))
     
     steps = pr_count-1;
 
-    if mod(pr_count, 100) == 0 
-        fprintf('%d\n', pr_count);
-    end
+%     if mod(pr_count, 100) == 0 
+%         fprintf('%d\n', pr_count);
+%     end
     
     % Calculate position error
     pos_err=pos-true_val(2:4);
@@ -187,13 +188,11 @@ fclose(F_TRU);
 fclose(F_RES);
 fclose(F_ERR);
 fclose(F_PRV);
-if show_only == 0
-    return;
-end
+figs = [];
 end
 %% Show results
-err_plot_nav(out_err,out_res,in_mnav,in_meta,DTM,cellsize,success);
-kalman_plot(out_prv, in_meta);
+figs = [figs err_plot_nav(out_err,out_res,in_mnav,in_meta,DTM,cellsize,success,show_only)];
+figs = [figs kalman_plot(out_prv, in_meta, show_only)];
 end
 
 %% Supporting functions

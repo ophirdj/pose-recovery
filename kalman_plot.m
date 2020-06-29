@@ -1,6 +1,10 @@
-function [] = kalman_plot(in_prv, in_meta)
+function [figs] = kalman_plot(in_prv, in_meta, visible)
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
+if nargin < 3
+    visible = 1;
+end
+
 prv=readbin_v000(in_prv,30);
 
 x=prv(1:15,:);
@@ -15,7 +19,15 @@ time_series = repmat((1:size(x, 2))/freq_Hz, [3 1])';
 
 RAD2DEG = 180/pi;
 
-figure;
+if visible
+    onoff = 'On';
+else
+    onoff = 'Off';
+end
+
+figs = [];
+
+figs = [figs figure('Name','Correction','doublebuffer',onoff,'Visible',onoff)];
 subplot(2,3,1);
 title('Position Correction Over Time');
 xlabel('Time (sec)');
@@ -61,7 +73,7 @@ grid;
 plot(time_series, x(13:15,:)'*RAD2DEG);
 legend('yaw', 'pitch', 'roll');
 
-figure;
+figs = [figs figure('Name','Covariance','doublebuffer',onoff,'Visible',onoff)];
 subplot(2,3,1);
 title('Square Root of Covariance (Position)');
 xlabel('Time (sec)');
@@ -108,7 +120,7 @@ grid;
 plot(time_series, C_sqrt(10:12,:)'*RAD2DEG);
 legend('yaw', 'pitch', 'roll');
 
-figure;
+figs = [figs figure('Name','Correletaion','doublebuffer',onoff,'Visible',onoff)];
 subplot(2,3,1);
 title('Correlation (Position)');
 xlabel('Time (sec)');
@@ -155,4 +167,3 @@ plot(time_series, rho(10:12,:)');
 legend('yaw', 'pitch', 'roll');
 
 end
-

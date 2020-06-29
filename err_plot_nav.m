@@ -1,6 +1,11 @@
-function [] = err_plot_nav(out_err,out_res,in_mnav,in_meta,DTM,cellsize,success)
+function [figs] = err_plot_nav(out_err,out_res,in_mnav,in_meta,DTM,cellsize,success,visible)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
+
+if nargin < 8
+    visible = 1;
+end
+
 err=readbin_v000(out_err,11);
 res=readbin_v000(out_res,10);
 tru=readbin_v000(in_mnav,10);
@@ -11,9 +16,17 @@ time_series = (1:size(err, 2))/freq_Hz;
 
 RAD2DEG = pi/180;
 
+if visible
+    onoff = 'On';
+else
+    onoff = 'Off';
+end
+
+figs = [];
+
 [X, Y] = meshgrid((1:size(DTM, 2))*cellsize, (1:size(DTM, 1))*cellsize);
 
-figure('Name','Trajectory');
+figs = [figs figure('Name','Trajectory','doublebuffer',onoff,'Visible',onoff)];
 subplot(1,2,1);
 contour(X, Y, DTM);
 hold on;
@@ -40,7 +53,7 @@ xlabel('X offset (m)');
 ylabel('Y offset (m)');
 legend('Terrain', 'Difference');
 
-figure('Name','Error');
+figs = [figs figure('Name','Error','doublebuffer',onoff,'Visible',onoff)];
 subplot(2,3,1);
 plot(time_series, err(2,:));
 title('Error Over Time (X)');
@@ -89,7 +102,7 @@ ylabel('Roll offset (deg)');
 hold on;
 grid;
 
-figure('Name','Lidar');
+figs = [figs figure('Name','Lidar','doublebuffer',onoff,'Visible',onoff)];
 subplot(2,1,1);
 plot(time_series, err(8,:));
 title('Err LIDAR (All)');
