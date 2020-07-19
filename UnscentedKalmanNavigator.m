@@ -1,7 +1,7 @@
 function [success, steps, figs] = UnscentedKalmanNavigator( in_mnav, in_mimu, in_mlidar, ...
     in_meta, out_res, out_err, out_prv, DTM, ...
     process_noise, measurement_noise, kalman_alpha, kalman_P, ...
-    accelerometer_bias_m_per_sec2, gyro_drift_rad_per_sec2, ini_pos_err_m, ...
+    accelerometer_bias_m_per_sec2, gyro_drift_rad_per_sec, ini_pos_err_m, ...
     ini_vel_err_m_sec, ini_att_err_rad, ...
     sim_len, show_only)
 %UNTITLED3 Summary of this function goes here
@@ -22,7 +22,7 @@ ray_angles = fread(F_META, n_rays, 'double');
 nav_len = fread(F_META, 1, 'double');
 fclose(F_META);
 
-imu_bias = [accelerometer_bias_m_per_sec2, gyro_drift_rad_per_sec2];
+imu_bias = [accelerometer_bias_m_per_sec2, gyro_drift_rad_per_sec];
 
 if ~size(nav_len,1)
     nav_len = sim_len;
@@ -34,8 +34,9 @@ o_res = zeros(10, nav_len);
 o_prv = zeros(30, nav_len);
 
 dt_lidar = dt/10;
-
+steps = 0;
 success = true;
+figs = [];
 if show_only == 0 || show_only == 2
 
 F_IMU=fopen(in_mimu,'rb');
@@ -188,7 +189,6 @@ fclose(F_TRU);
 fclose(F_RES);
 fclose(F_ERR);
 fclose(F_PRV);
-figs = [];
 end
 %% Show results
 figs = [figs err_plot_nav(out_err,out_res,in_mnav,in_meta,DTM,cellsize,success,show_only)];

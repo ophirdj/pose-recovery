@@ -4,6 +4,7 @@ dtm_load();
 
 % Limit path generation
 sim_time_secs = 360;
+NUM_PATHS_PER_CLASS = 3;
 
 % Limit area of path generation
 margin = 3500;
@@ -20,15 +21,11 @@ V_vert_m_sec = 1;
 
 %% constant_velocity
 fail_cnt = 0;
-for n=1:10
+for n=1:NUM_PATHS_PER_CLASS
     while 1
         name = sprintf('constant_velocity_%d', n);
-        ini_pos = [x_start + randi(x_end-x_start); ...
-                   y_start + randi(y_end-y_start); ...
-                   z_start + randi(z_end-z_start)];
-        vel = [V_horiz_m_sec * rand(); ...
-                   V_horiz_m_sec * rand(); ...
-                   V_vert_m_sec * rand()];
+        ini_pos = random_pos([x_start x_end], [y_start y_end], [z_start z_end]);
+        vel = random_vel(V_horiz_m_sec, V_vert_m_sec);
         if constant_velocity(ini_pos, vel, sim_time_secs, name, dir, DTM, cellsize)
             fprintf('%s [Done]\n', name);
             fail_cnt = 0;
@@ -41,15 +38,12 @@ for n=1:10
 end
 
 %% constant_bank
-for n=1:10
+fail_cnt = 0;
+for n=1:NUM_PATHS_PER_CLASS
     while 1
         name = sprintf('constant_bank_%d', n);
-        ini_pos = [x_start + randi(x_end-x_start); ...
-                   y_start + randi(y_end-y_start); ...
-                   z_start + randi(z_end-z_start)];
-        ini_vel = [V_horiz_m_sec * rand(); ...
-                   V_horiz_m_sec * rand(); ...
-                   V_vert_m_sec * rand()];
+        ini_pos = random_pos([x_start x_end], [y_start y_end], [z_start z_end]);
+        ini_vel = random_vel(V_horiz_m_sec, V_vert_m_sec);
         bank = (pi/256 + pi/512 * rand()) * power(-1, randi(2));
         if constant_bank(ini_pos, ini_vel, bank, sim_time_secs, name, dir, DTM, cellsize)
             fprintf('%s [Done]\n', name);
@@ -63,6 +57,18 @@ for n=1:10
 end
 
 %% Supporting functions
+function [pos] = random_pos(x, y, z)
+        pos = [x(1) + randi(x(2)-x(1)); ...
+               y(1) + randi(y(2)-y(1)); ...
+               z(1) + randi(z(2)-z(1))];
+end
+
+function [vel] = random_vel(h, v)
+        vel = [h * rand(); ...
+               h * rand(); ...
+               v * rand()];
+end
+
 function [success] = constant_velocity(ini_pos, vel, sim_time_secs, name, dir, DTM, cellsize)
     freq_Hz = 100;
     ray_angles = [-pi/6:pi/180:pi/6 pi/6-pi/180:-pi/180:-pi/6+pi/180];

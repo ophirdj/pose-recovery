@@ -26,8 +26,8 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, 
     end
     
     %IMU
-    for accelerometer_variance = accelerometer_variances_m_sec2
-        for gyro_variance = gyro_variances_deg_sec2
+    for accelerometer_variance = accelerometer_variances_dt
+        for gyro_variance = gyro_variances_dt
             dir = [dir_name sprintf('imu_%.0d_%.0d/', accelerometer_variance, gyro_variance)];
             if ~isfolder(dir)
                 mkdir(dir);
@@ -43,7 +43,7 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, 
         if ~isfolder(dir)
             mkdir(dir);
         end
-        errDTM = DTM + dtm_err .* randn(size(DTM));
+        errDTM = noise_dtm(DTM, dtm_err);
         success = LidarGen([dir_name 'mnav.bin'], [dir 'mlidar.bin'], ray_angles, errDTM, cellsize);
         
         if ~success
@@ -52,16 +52,16 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, 
     end
     
     %LIDAR
-    lidar = readbin_v000([dir_name 'mlidar.bin'],2);
-    for lidar_err = lidar_errs_percent
+    lidar = readbin_v000([dir_name 'mlidar.bin'],5);
+    for lidar_err = lidar_errs
         dir = [dir_name sprintf('lidar_%.0d/', lidar_err)];
         if ~isfolder(dir)
             mkdir(dir);
         end
         
-        l = lidar(2:end,:);
-        le = l .* (100 + lidar_err .* (2.* rand(size(l)) - 1)) / 100;
-        o = [lidar(1,:);le];
+        o = [lidar(1,:); ...
+             lidar(2,:) + lidar_err*randn(size(lidar(2,:))); ...
+             lidar(3:5,:)];
         
         F_LIDAR = fopen([dir 'mlidar.bin'], 'wb');
         for n=1:size(o, 2)
@@ -71,7 +71,7 @@ function success = PathGenAll( dir_name, mot_def, ini_pos, ray_angles, freq_Hz, 
     end
 end
 
-
+%% Supporting Functions
 function [] = gen_ground_truth(dir_name, mot_def, ini_pos, freq_Hz, vel)
     %% Generate ground truth path and IMU
     ini_pva = zeros(3);
